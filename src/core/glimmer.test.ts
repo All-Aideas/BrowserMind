@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { applySessionRepair, escalateSession, runDiagnosticSession } from "./engine";
+import { applySessionRepair, codeAfterRepair, escalateSession, runDiagnosticSession } from "./engine";
+import { applyPatch } from "./patches";
 import { GlimmerAdapter, parseGeneratedPatch } from "./glimmer";
 import { SAMPLE_CASES } from "./samples";
 
@@ -118,5 +119,70 @@ describe("GlimmerAdapter en modo benchmark", () => {
     const { code, traceback } = sample("missing-column");
     await expect(escalateSession(runDiagnosticSession(code, traceback, [adapter]), adapter)).rejects.toThrow(/reparación local/);
     expect(requests).toHaveLength(0);
+  });
+});
+
+describe("seguridad de patches generados", () => {
+  const FAR_DEFINITIONS = [
+    "import pandas as pd",
+    'orders = pd.DataFrame({"customer_id": [1, 2], "total": [20, 30]})',
+    'profiles = pd.DataFrame({"client_id": [1, 2], "name": ["A", "B"]})',
+    ...Array.from({ length: 8 }, (_, i) => `step_${i} = ${i}`),
+    'joined = orders.merge(profiles, on="customer_id")',
+  ].join("\n");
+  const MERGE_TRACEBACK = "KeyError: 'customer_id' while merging datasets";
+
+  it("descarta un fragmento que aparece más de una vez", async () => {
+    const { adapter } = adapterWith(JSON.stringify({ before: '"customer_id"', after: '"client_id"', explanation: "x" }));
+    const { code, traceback } = sample("merge-alignment");
+    const escalated = await escalateSession(runDiagnosticSession(code, traceback, [adapter]), adapter);
+    expect(escalated.patch).toBeUndefined();
+    expect(escalated.modelNote).toMatch(/2 veces.*ambiguo/);
+  });
+
+  it("aplica el patch del modelo una sola vez y sin interpretar `$` en el reemplazo", () => {
+    const patched = applyPatch("x = 1\ny = 2", {
+      id: "m", title: "m", explanation: "m", mode: "replace", before: "x = 1", after: "x = '$&'", safety: "guarded", origin: "model",
+    });
+    expect(patched).toBe("x = '$&'\ny = 2");
+  });
+
+  it("envía como sólo lectura las definiciones lejanas que usa la línea del error", async () => {
+    const { adapter, requests } = adapterWith(MERGE_FIX);
+    const session = runDiagnosticSession(FAR_DEFINITIONS, MERGE_TRACEBACK, [adapter]);
+    expect(session.context.readOnlyLines).toEqual([2, 3]);
+    await escalateSession(session, adapter);
+    const user = requests[0].body.messages[1].content;
+    expect(user).toContain("# definiciones (sólo lectura)");
+    expect(user).toContain('"client_id"');
+    expect(user).not.toContain("step_0");
+  });
+
+  it("con las definiciones a la vista, el patch del merge se verifica", async () => {
+    const { adapter } = adapterWith(MERGE_FIX);
+    const repaired = applySessionRepair(await escalateSession(runDiagnosticSession(FAR_DEFINITIONS, MERGE_TRACEBACK, [adapter]), adapter));
+    expect(repaired.status).toBe("verified");
+  });
+
+  it("rechaza un patch que modifica una definición de sólo lectura", async () => {
+    const { adapter } = adapterWith(JSON.stringify({
+      before: '{"customer_id": [1, 2], "total"',
+      after: '{"client_id": [1, 2], "total"',
+      explanation: "renombra la columna",
+    }));
+    const repaired = applySessionRepair(await escalateSession(runDiagnosticSession(FAR_DEFINITIONS, MERGE_TRACEBACK, [adapter]), adapter));
+    expect(repaired.status).toBe("failed");
+    expect(repaired.checkers.find((checker) => checker.id === "within-context")?.message).toContain("2");
+  });
+
+  it("el editor conserva el código si un checker rechaza el patch", async () => {
+    const { adapter } = adapterWith(JSON.stringify({ before: "step_0 = 0", after: "step_0 = 1", explanation: "x" }));
+    const rejected = applySessionRepair(await escalateSession(runDiagnosticSession(FAR_DEFINITIONS, MERGE_TRACEBACK, [adapter]), adapter));
+    expect(rejected.status).toBe("failed");
+    expect(codeAfterRepair(rejected, FAR_DEFINITIONS)).toBe(FAR_DEFINITIONS);
+
+    const { code, traceback } = sample("missing-column");
+    const verified = applySessionRepair(runDiagnosticSession(code, traceback));
+    expect(codeAfterRepair(verified, code)).toBe(verified.patchedSource);
   });
 });

@@ -9,6 +9,17 @@ export function splitLines(source: string): string[] {
   return source.split(/\r?\n/);
 }
 
+/**
+ * Números de línea (base 1) de la sentencia que empieza en `line`: incluye las líneas
+ * indentadas que siguen y un cierre suelto (`)`, `]`, `}`), como en un DataFrame multilínea.
+ */
+export function statementLines(lines: readonly string[], line: number): number[] {
+  let end = line;
+  while (end < lines.length && /^\s/.test(lines[end])) end += 1;
+  if (end < lines.length && /^[)\]}]/.test(lines[end])) end += 1;
+  return Array.from({ length: end - line + 1 }, (_, offset) => line + offset);
+}
+
 export function parsePython(source: string, sink?: FlagTarget): PythonIndex {
   return traced(sink, "parsePython", () => {
     const lines = splitLines(source);

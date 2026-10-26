@@ -59,7 +59,10 @@ export interface Diagnostic {
 }
 
 export interface SelectedContext {
+  /** Todas las líneas que viajan al modelo. */
   lines: number[];
+  /** Definiciones agregadas como referencia: el modelo las ve pero no puede modificarlas. */
+  readOnlyLines: number[];
   symbols: string[];
   payload: string;
   redactions: string[];

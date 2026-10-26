@@ -129,6 +129,14 @@ export function applyPatch(source: string, patch: RepairPatch, sink?: FlagTarget
     if (!source.includes(patch.before)) {
       throw new Error(`No se encontró el fragmento esperado: ${patch.before}`);
     }
-    return source.replaceAll(patch.before, patch.after);
+    // Las reglas locales corrigen todos los accesos al alias; un patch del modelo
+    // cambia una sola ocurrencia (escalateSession ya exige que sea única).
+    if (patch.origin === "model") {
+      if (source.indexOf(patch.before) !== source.lastIndexOf(patch.before)) {
+        throw new Error(`El fragmento aparece más de una vez: ${patch.before}`);
+      }
+      return source.replace(patch.before, () => patch.after);
+    }
+    return source.replaceAll(patch.before, () => patch.after);
   });
 }

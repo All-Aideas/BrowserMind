@@ -6,6 +6,10 @@ import { checkChangesWithinContext, runCheckers } from "./checkers";
 import { parsePython } from "./parser";
 import type { DiagnosticSession } from "./types";
 
+function countOccurrences(source: string, fragment: string): number {
+  return fragment ? source.split(fragment).length - 1 : 0;
+}
+
 function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / 4));
 }
@@ -67,14 +71,19 @@ export async function escalateSession(
   const proposal = await traceAsync(flags, "escalateToModel", () =>
     adapter.proposePatch(session.context, session.diagnostic, signal));
 
-  // Un fragmento que no está en el código no se puede aplicar ni auditar: se descarta.
-  const matches = proposal.patch !== undefined && session.source.includes(proposal.patch.before);
+  // El fragmento debe aparecer exactamente una vez: si falta no se puede aplicar, y si se
+  // repite el reemplazo podría tocar otras líneas (por ejemplo, la definición de los datos).
+  const occurrences = proposal.patch ? countOccurrences(session.source, proposal.patch.before) : 0;
+  const matches = proposal.patch !== undefined && occurrences === 1;
+  const rejection = occurrences === 0
+    ? "El patch generado no coincide con el código y se descartó."
+    : `El fragmento del patch aparece ${occurrences} veces; se descartó por ambiguo.`;
   if (proposal.patch && !matches) {
     flags.add({
       functionName: "escalateToModel",
       phase: "error",
       level: "error",
-      message: "Patch descartado: el fragmento `before` no aparece en el código.",
+      message: `Patch descartado: ${rejection}`,
       details: proposal.patch.before,
     });
   }
@@ -83,7 +92,7 @@ export async function escalateSession(
   return {
     ...session,
     patch: matches ? proposal.patch : undefined,
-    modelNote: matches ? undefined : proposal.patch ? "El patch generado no coincide con el código y se descartó." : proposal.rationale,
+    modelNote: matches ? undefined : proposal.patch ? rejection : proposal.rationale,
     escalation: { ...session.escalation, available: true, used: true },
     flags: flags.all(),
     metrics: {
@@ -101,9 +110,11 @@ export function applySessionRepair(session: DiagnosticSession): DiagnosticSessio
     if (!session.patch) throw new Error("No hay una reparación segura disponible para esta sesión.");
     const patchedSource = applyPatch(session.source, session.patch, flags);
     const checkers = runCheckers(patchedSource, session.diagnostic, flags);
-    // Un modelo sólo vio el contexto enviado: no puede haber modificado otras líneas.
+    // Un modelo sólo puede modificar las líneas editables que recibió (no las de referencia).
     if (session.patch.origin === "model") {
-      checkers.push(checkChangesWithinContext(session.source, patchedSource, session.context.lines));
+      const { lines, readOnlyLines } = session.context;
+      const editable = lines.filter((line) => !readOnlyLines.includes(line));
+      checkers.push(checkChangesWithinContext(session.source, patchedSource, editable));
     }
     const verified = checkers.every((checker) => checker.passed);
     return {
@@ -114,4 +125,9 @@ export function applySessionRepair(session: DiagnosticSession): DiagnosticSessio
       flags: flags.all(),
     };
   });
+}
+
+/** Código que debe quedar en el editor: sólo cambia si el patch pasó todos los checkers. */
+export function codeAfterRepair(session: DiagnosticSession, currentCode: string): string {
+  return session.status === "verified" && session.patchedSource !== undefined ? session.patchedSource : currentCode;
 }

@@ -51,7 +51,7 @@ Si editás el código o el traceback después de analizar, el resultado se borra
 
 ## 3. Probar un caso sin reparación automática
 
-Elegí `ValueError · shape` y analizá. El comportamiento correcto no es inventar un patch: debe aparecer `Revisión manual requerida`, explicar que hay que comparar la cantidad real de features contra el contrato del modelo y mostrar `ESCALAMIENTO · NIVEL 2` con `Muse Glimmer · no conectado`.
+Con el modo benchmark apagado, elegí `ValueError · shape` y analizá. El comportamiento correcto no es inventar un patch: debe aparecer `Revisión manual requerida`, explicar que hay que comparar la cantidad real de features contra el contrato del modelo y mostrar `ESCALAMIENTO · NIVEL 2` con `Muse Glimmer · no conectado`.
 
 Eso demuestra que el agente distingue entre detectar un problema y tener evidencia suficiente para modificar código.
 
@@ -77,6 +77,14 @@ Si el endpoint no está levantado, el popup dice `No se pudo conectar con Glimme
 | `ValueError · NaN` | `invalid-values` | limpieza insertada antes de `fit` y checker |
 | `Merge · alineación` | `merge-alignment` | diagnóstico estructural y revisión manual |
 
+## 4b. Ejecutar la QA del producto
+
+1. Bajá hasta `QA del producto`.
+2. Presioná `Ejecutar QA completa`.
+3. El resultado esperado es `5/5 aprobados`.
+
+La QA no llama a Glimmer ni necesita key. Comprueba el flujo completo con los datos sintéticos: diagnóstico correcto, reparación local cuando existe, checkers verdes y escalamiento manual para shape/merge. Si cambiás una muestra o una regla y el contrato se rompe, la tarjeta del caso queda roja y muestra en qué etapa falló.
+
 ## 5. Cómo leer los flags
 
 En `Flags de ejecución`, cada función publica su resultado:
@@ -92,7 +100,7 @@ Si una función falla, el popup explica la causa. El orden de flags indica hasta
 
 `Contexto que viajaría` muestra solamente las líneas seleccionadas alrededor del error y el traceback, con rutas locales y correos reemplazados por `<ruta>` y `<email>`. Las filas del dataset no se leen.
 
-En esta versión el contexto no viaja a ningún modelo: se muestra para auditar la futura integración.
+Con el modo benchmark apagado el contexto no viaja a ningún modelo. Con el modo benchmark activo, ese bloque es exactamente lo que se envía al proxy de Glimmer.
 
 ## 7. Señales de que algo no funciona
 
@@ -104,4 +112,4 @@ En esta versión el contexto no viaja a ningún modelo: se muestra para auditar 
 
 ## 8. Qué todavía no hace
 
-Este tutorial cubre el MVP de análisis determinista. Todavía falta ejecutar Python real con Pyodide dentro de un Web Worker, cargar `.py`/`.ipynb`, persistir sesiones en IndexedDB y conectar modelos de Meta en modo benchmark.
+Este tutorial cubre el MVP de análisis determinista y el escalamiento benchmark a Glimmer mediante un endpoint compatible con OpenAI. Todavía falta ejecutar Python real con Pyodide dentro de un Web Worker, cargar `.py`/`.ipynb`, persistir sesiones en IndexedDB, probar con un proveedor real y agregar Spark/reintentos.

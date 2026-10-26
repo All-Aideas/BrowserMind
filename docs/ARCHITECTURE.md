@@ -25,7 +25,7 @@ Un `RepairPatch` declara `mode: "replace" | "insert"`. Los checkers inspeccionan
 
 ## Privacidad
 
-El contexto se deriva localmente del código y traceback. `redactSensitive` reemplaza rutas locales y correos en el payload y en la evidencia. El selector no lee filas del dataset y sólo informa símbolos de las líneas elegidas.
+El contexto se deriva localmente del código y traceback. `redactSensitive` reemplaza rutas locales y correos en el payload y en la evidencia. El selector no lee filas del dataset y sólo informa símbolos de las líneas elegidas. Además de la ventana de ±2 líneas alrededor del error, suma (hasta 12 líneas) las definiciones de las variables que usa la línea del error, como `readOnlyLines`: el modelo las ve bajo `# definiciones (sólo lectura)` pero no puede modificarlas.
 
 ## Modelos de Meta
 
@@ -33,7 +33,7 @@ El contexto se deriva localmente del código y traceback. `redactSensitive` reem
 
 `src/core/glimmer.ts` implementa `GlimmerAdapter` (nivel 2) sobre Chat Completions compatible con OpenAI: `temperature: 0`, `max_tokens: 512`, timeout de 30 s y cancelación con `AbortSignal`. Pide JSON `{before, after, explanation}` y tolera bloques ```json y prefijos de número de línea.
 
-`escalateSession` (en `engine.ts`) envía sólo `session.context`, suma `calls`, tokens generativos y latencia, y descarta el patch si `before` no aparece en el código. El patch queda marcado `origin: "model"` y no se aplica solo: al aplicarlo corren los checkers del tipo de error más `within-context`, que rechaza cambios en líneas que el modelo no recibió.
+`escalateSession` (en `engine.ts`) envía sólo `session.context`, suma `calls`, tokens generativos y latencia, y descarta el patch si `before` no aparece exactamente una vez en el código (si se repite, el reemplazo podría tocar otras líneas, como la definición de los datos). Un patch del modelo se aplica una sola vez. El patch queda marcado `origin: "model"` y no se aplica solo: al aplicarlo corren los checkers del tipo de error más `within-context`, que rechaza cambios fuera de las líneas editables que el modelo recibió.
 
 La API key vive en `.env.local` y la usa el proxy `/api/glimmer` de `vite.config.ts`; el cliente sólo conoce `VITE_GLIMMER_MODEL`.
 

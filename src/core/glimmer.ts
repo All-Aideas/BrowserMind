@@ -26,6 +26,8 @@ const SYSTEM_PROMPT = [
   'Respondé únicamente con JSON: {"before": "...", "after": "...", "explanation": "..."}.',
   "`before` debe copiarse textualmente de una línea recibida, sin el prefijo de número de línea; `after` lo reemplaza.",
   "Hacé el cambio mínimo. No inventes columnas ni variables que no aparezcan en el fragmento.",
+  "Las líneas bajo «# definiciones (sólo lectura)» son referencia: no las modifiques.",
+  "`before` tiene que ser único en el código: incluí suficiente texto de la línea para que no se repita.",
   'Si no hay un cambio seguro, respondé {"before": "", "after": "", "explanation": "<motivo>"}.',
 ].join("\n");
 

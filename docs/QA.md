@@ -23,6 +23,18 @@ Toda modificación funcional debe sumar o actualizar una prueba antes de conside
 | NaN/inf | valores inválidos | inserta limpieza antes de `fit` y verifica el orden |
 | merge/alignment | claves no alineadas | clasifica y escala a Glimmer; el checker exige la clave en ambos DataFrames |
 
+## QA de producto
+
+`src/core/productQa.ts` contiene el contrato ejecutable de los cinco casos. La interfaz también expone `Ejecutar QA completa` para obtener un informe reproducible sin API externa.
+
+Un caso sólo pasa si:
+
+- clasifica el error esperado;
+- propone patch local cuando corresponde, o conserva revisión manual cuando no hay evidencia suficiente;
+- el patch aplicado deja todos los checkers en verde;
+- el caso manual conserva el nivel de escalamiento esperado;
+- no se altera el código fuera del flujo declarado.
+
 ## Regla de diagnóstico
 
 Un error debe responder siempre: qué función falló, en qué etapa, por qué falló, qué contexto se usó y hasta dónde avanzó la sesión. Si no hay reparación segura, la interfaz lo declara y no altera el código.

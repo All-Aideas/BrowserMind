@@ -1,5 +1,5 @@
 import { traced, type FlagTarget } from "./flags";
-import { splitLines } from "./parser";
+import { splitLines, statementLines } from "./parser";
 import { accessedColumns, declaredColumns } from "./patches";
 import type { CheckerResult, Diagnostic } from "./types";
 
@@ -91,10 +91,7 @@ function frameColumns(source: string, frame: string): string[] {
   const lines = splitLines(source);
   const start = lines.findIndex((line) => new RegExp(`^\\s*${frame}\\s*=\\s*pd\\.DataFrame\\(`).test(line));
   if (start === -1) return [];
-  let end = start + 1;
-  while (end < lines.length && /^\s/.test(lines[end])) end += 1;
-  if (end < lines.length && /^[)\]}]/.test(lines[end])) end += 1;
-  return declaredColumns(lines.slice(start, end).join("\n"));
+  return declaredColumns(statementLines(lines, start + 1).map((line) => lines[line - 1]).join("\n"));
 }
 
 function checkMergeKeys(source: string): CheckerResult {
@@ -158,8 +155,8 @@ export function checkChangesWithinContext(original: string, patched: string, all
     name: "Cambios dentro del contexto enviado",
     passed: outside.length === 0,
     message: outside.length === 0
-      ? "El modelo sólo modificó líneas que recibió."
-      : `El patch toca líneas que el modelo no vio: ${outside.join(", ")}.`,
+      ? "El modelo sólo modificó líneas editables que recibió."
+      : `El patch toca líneas que no eran editables: ${outside.join(", ")}.`,
   };
 }
 

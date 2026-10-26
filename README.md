@@ -14,6 +14,7 @@ Esta primera vertical ya permite:
 - en modo benchmark, pedir un patch a Muse Glimmer con el contexto redactado y verificarlo con los mismos checkers;
 - proponer y aplicar reparaciones deterministas en los casos seguros;
 - ejecutar checkers explícitos y mostrar su resultado;
+- ejecutar una QA de producto sobre los cinco casos semilla y mostrar un resultado `N/N`;
 - emitir flags de inicio, éxito y error para cada función del núcleo;
 - dejar visible un popup cuando una operación falla, con causa y estado.
 
@@ -72,5 +73,7 @@ El paso a paso completo está en [`docs/TUTORIAL.md`](./docs/TUTORIAL.md). Para 
 5. Confirmá que aparece `missing-column`, una propuesta de `revenue` a `revenue_total` y flags verdes.
 6. Presioná `Aplicar y verificar`.
 7. El resultado correcto es `Checker aprobado`, checkers en verde y el popup `Patch aplicado y aprobado por los checkers.`
+
+También podés presionar `Ejecutar QA completa` en la sección `QA del producto`. Esa corrida no usa API: comprueba clasificación, existencia de patch, checkers, estado final y escalamiento manual sobre los cinco casos.
 
 Para conocer qué se conserva entre corridas, revisá [`MEMORY_STATUS.md`](./MEMORY_STATUS.md).

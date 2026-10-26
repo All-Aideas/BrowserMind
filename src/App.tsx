@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
-import { applySessionRepair, escalateSession, runDiagnosticSession } from "./core/engine";
+import { applySessionRepair, codeAfterRepair, escalateSession, runDiagnosticSession } from "./core/engine";
 import { GLIMMER_PROXY_ENDPOINT, GlimmerAdapter } from "./core/glimmer";
+import { runProductQa, type ProductQaReport } from "./core/productQa";
 import { SAMPLE_CASES, type SampleCase } from "./core/samples";
 import type { DiagnosticSession, FunctionFlag } from "./core/types";
 
@@ -31,6 +32,7 @@ export function App() {
   const [toast, setToast] = useState<string>();
   const [benchmarkMode, setBenchmarkMode] = useState(false);
   const [escalating, setEscalating] = useState(false);
+  const [productQa, setProductQa] = useState<ProductQaReport>();
   const escalation = useRef<AbortController | undefined>(undefined);
 
   const passedChecks = session?.checkers.filter((checker) => checker.passed).length ?? 0;
@@ -63,6 +65,14 @@ export function App() {
   function toggleBenchmarkMode(enabled: boolean): void {
     setBenchmarkMode(enabled);
     resetSession();
+  }
+
+  function runProductQaCheck(): void {
+    const report = runProductQa();
+    setProductQa(report);
+    setToast(report.failed === 0
+      ? `QA del producto aprobada: ${report.passed}/${report.total} casos.`
+      : `QA del producto con fallos: ${report.passed}/${report.total} casos.`);
   }
 
   function analyze(): void {
@@ -103,8 +113,10 @@ export function App() {
     try {
       const repaired = applySessionRepair(session);
       setSession(repaired);
-      setCode(repaired.patchedSource ?? code);
-      setToast(repaired.status === "verified" ? "Patch aplicado y aprobado por los checkers." : "El patch se aplicó, pero un checker lo rechazó.");
+      setCode(codeAfterRepair(repaired, code));
+      setToast(repaired.status === "verified"
+        ? "Patch aplicado y aprobado por los checkers."
+        : "Un checker rechazó el patch: tu código quedó como estaba. Revisá el diff.");
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Falló la aplicación del patch.");
     }
@@ -162,6 +174,7 @@ export function App() {
             <span><strong>Modo benchmark Meta</strong>Permite enviar el contexto redactado a Muse Glimmer. Usalo sólo con datos sintéticos o públicos: con un endpoint remoto no hay privacidad total.</span>
           </label>
           <div className="scope-note"><span>i</span><p>{benchmarkMode ? "Sólo viaja lo que ves en «Contexto que viajaría», y únicamente cuando presionás «Escalar»." : "El contenido queda en esta sesión. Nada se envía a un modelo externo."}</p></div>
+          <div className="example-card"><span className="label-muted">EJEMPLO GUIADO</span><strong>KeyError → columna existente</strong><p>Analizá el caso seleccionado y verificá que `revenue` se corrige a `revenue_total` sin llamar a una API.</p></div>
         </aside>
 
         <section className="editor-panel panel">
@@ -215,6 +228,12 @@ export function App() {
           <pre>{session?.context.payload ?? "Sin análisis todavía."}</pre>
           <div className="redaction-list">{(session?.context.redactions ?? ["rutas locales", "filas de dataset", "datos personales"]).map((item) => <span key={item}>⊘ {item}</span>)}</div>
         </section>
+      </section>
+
+      <section className="panel product-qa-panel">
+        <div className="panel-heading"><div><span className="section-index">06</span><h3>QA del producto</h3></div><button type="button" className="button qa-button" onClick={runProductQaCheck}>Ejecutar QA completa <span>✓</span></button></div>
+        <div className="qa-intro"><p>Valida diagnóstico, patch, checkers y revisión manual sobre los cinco casos semilla. No usa API externa.</p>{productQa && <strong className={productQa.failed === 0 ? "qa-pass" : "qa-fail"}>{productQa.passed}/{productQa.total} aprobados · {productQa.elapsedMs}ms</strong>}</div>
+        {productQa ? <div className="qa-case-grid">{productQa.results.map((item) => <div className={`qa-case ${item.passed ? "passed" : "failed"}`} key={item.sampleId}><div><span className="qa-icon">{item.passed ? "✓" : "×"}</span><strong>{item.label}</strong></div><span className="qa-stage">{item.stage}</span><p>{item.message}</p><small>{item.passedCheckerCount}/{item.checkerCount} checkers</small></div>)}</div> : <div className="qa-empty">Todavía no se ejecutó la QA. Presioná el botón para obtener una evidencia reproducible del producto.</div>}
       </section>
 
       {toast && <div className="toast" role="status"><span>✦</span>{toast}<button type="button" onClick={() => setToast(undefined)} aria-label="Cerrar aviso">×</button></div>}

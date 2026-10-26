@@ -1,5 +1,5 @@
 import { traced, type FlagTarget } from "./flags";
-import { splitLines } from "./parser";
+import { splitLines, statementLines } from "./parser";
 import type { Diagnostic, ErrorKind, PythonIndex, SelectedContext } from "./types";
 
 interface ClassificationRule {
@@ -62,6 +62,8 @@ const RULES: ClassificationRule[] = [
   },
 ];
 
+/** Tope de líneas de referencia para que el contexto siga siendo mínimo. */
+const MAX_READ_ONLY_LINES = 12;
 const PATH_PATTERN = /(?:[A-Za-z]:\\|\/(?:home|Users|tmp|var|mnt)\/)[^\s"',)]+/g;
 const EMAIL_PATTERN = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
 const TRACEBACK_LINE_PATTERN = /line\s+(\d+)/i;
@@ -146,20 +148,36 @@ export function selectContext(
     index.functions.forEach((fn) => {
       if (Math.abs(fn.line - center) <= 6) selected.add(fn.line);
     });
+
+    // Definiciones de las variables que usa la línea del error y quedaron fuera de la
+    // ventana (por ejemplo, los DataFrames de un merge). Viajan como sólo lectura.
+    const readOnly = new Set<number>();
+    const used = new Set(lines[center - 1]?.match(/[A-Za-z_]\w*/g) ?? []);
+    for (const name of used) {
+      const definition = index.variables.filter((symbol) => symbol.name === name && symbol.line < center).at(-1);
+      if (!definition || selected.has(definition.line)) continue;
+      const statement = statementLines(lines, definition.line);
+      if (readOnly.size + statement.length > MAX_READ_ONLY_LINES) break;
+      statement.forEach((line) => readOnly.add(line));
+    }
+
+    const render = (numbers: number[]) => numbers.map((line) => `${line}: ${redactSensitive(lines[line - 1])}`).join("\n");
     const orderedLines = [...selected].sort((a, b) => a - b);
-    const code = orderedLines.map((line) => `${line}: ${redactSensitive(lines[line - 1])}`).join("\n");
+    const readOnlyLines = [...readOnly].sort((a, b) => a - b);
     const payload = [
-      code || "Sin código contextual seleccionado.",
+      readOnlyLines.length ? `# definiciones (sólo lectura)\n${render(readOnlyLines)}\n\n# código editable\n` : "",
+      render(orderedLines) || "Sin código contextual seleccionado.",
       diagnostic.evidence ? `\n# error\n${diagnostic.evidence}` : "",
     ].join("");
 
     // Sólo símbolos definidos dentro de las líneas seleccionadas, no todo el archivo.
     const symbols = [...index.variables, ...index.functions]
-      .filter((symbol) => selected.has(symbol.line))
+      .filter((symbol) => selected.has(symbol.line) || readOnly.has(symbol.line))
       .map((symbol) => symbol.name);
 
     return {
-      lines: orderedLines,
+      lines: [...orderedLines, ...readOnlyLines].sort((a, b) => a - b),
+      readOnlyLines,
       symbols: [...new Set(symbols)],
       payload,
       redactions: ["rutas locales", "correos electrónicos", "filas del dataset (no se leen)"],
