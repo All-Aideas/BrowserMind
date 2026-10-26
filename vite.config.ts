@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => {
   const proxy = { "/api/glimmer": glimmerProxy, "/api/meta": metaProxy };
 
   return {
+    // GitHub Pages sirve el sitio en /<repo>/: el workflow de deploy pasa BASE_PATH.
+    base: env.BASE_PATH || "/",
     plugins: [react()],
     server: { port: 5173, strictPort: true, proxy },
     preview: { proxy },
