@@ -23,7 +23,7 @@ Este archivo define cómo trabajan dos developers/IA sobre BrowserMind Data. La 
 ## Estado confirmado al 26 de octubre de 2026
 
 - `npm run qa` pasa.
-- Hay 62 tests aprobados en 8 archivos.
+- Hay 69 tests aprobados en 10 archivos.
 - La QA de producto valida 5/5 casos semilla sin API externa.
 - React + TypeScript + Vite están funcionando.
 - El núcleo clasifica errores, genera patches locales, ejecuta checkers y muestra flags.
@@ -31,7 +31,8 @@ Este archivo define cómo trabajan dos developers/IA sobre BrowserMind Data. La 
 - `ModelHarness` ya se finaliza con `accepted`/`rejected` y `checkerPassRate` después de la propuesta.
 - Existe un benchmark A–D reproducible de 20 tareas; las configuraciones sin modelo real quedan `not-configured`.
 - La API real de Glimmer todavía no está configurada ni debe fingirse como probada.
-- Pyodide, ejecución local en Web Worker y carga de `.py`/`.ipynb` están implementados; IndexedDB sigue pendiente.
+- Pyodide, ejecución local en Web Worker y carga de `.py`/`.ipynb` están implementados.
+- IndexedDB versionado para fuente, sesión y benchmark está implementado con borrado explícito y límites de tamaño.
 
 ## Fuente de verdad
 
@@ -84,17 +85,7 @@ Proceso obligatorio:
 
 ## Próxima tarea recomendada
 
-Implementar memoria de sesión con IndexedDB para fuentes y resultados, con borrado explícito y límites de tamaño.
-
-La tarea debe:
-
-1. conservar los cinco casos y la QA `5/5`;
-2. separar `session`, `source` y `benchmark` con versionado de esquema;
-3. agregar borrado explícito, límite de tamaño y migración segura;
-4. no guardar credenciales ni enviar fuentes a Glimmer;
-5. agregar tests de persistencia, redacción y borrado;
-6. actualizar `MEMORY_STATUS.md`, `docs/PROGRESS.md` y `docs/TUTORIAL.md`;
-7. cerrar con `npm run qa`.
+Conectar el adaptador de Muse Spark de la otra IA, comparar su resultado con el replay local y ejecutar la prueba real cuando el usuario entregue la key.
 
 ## Formato de respuesta de la IA colaboradora
 

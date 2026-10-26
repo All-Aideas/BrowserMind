@@ -18,10 +18,11 @@ Esta primera vertical ya permite:
 - cargar `.py`, `.txt` y `.ipynb`, convirtiendo las celdas del notebook a una fuente revisable;
 - ejecutar Python localmente dentro de un Web Worker con Pyodide bajo demanda y capturar stdout, stderr, traceback y timeout;
 - ejecutar un benchmark reproducible de 20 tareas (cinco casos × configuraciones A–D) sin contar modelos no conectados como éxitos;
+- conservar fuente, sesión, QA y benchmark en IndexedDB versionado, con límite de tamaño y borrado explícito;
 - emitir flags de inicio, éxito y error para cada función del núcleo;
 - dejar visible un popup cuando una operación falla, con causa y estado.
 
-Todavía no se simula como terminado lo que falta: persistencia IndexedDB, Muse Spark (nivel 3), reintentos con diff y validación contra un proveedor real de Glimmer. Pyodide se descarga desde un CDN versionado sólo cuando presionás `Ejecutar Python`; la primera ejecución requiere conexión y todavía no hay paquetes locales precargados.
+Todavía no se simula como terminado lo que falta: Muse Spark (nivel 3) y validación contra un proveedor real de Glimmer. Pyodide se descarga desde un CDN versionado sólo cuando presionás `Ejecutar Python`; la primera ejecución requiere conexión y todavía no hay paquetes locales precargados.
 
 ## Conectar Muse Glimmer (modo benchmark)
 
@@ -80,6 +81,8 @@ El paso a paso completo está en [`docs/TUTORIAL.md`](./docs/TUTORIAL.md). Para 
 También podés presionar `Ejecutar QA completa` en la sección `QA del producto`. Esa corrida no usa API: comprueba clasificación, existencia de patch, checkers, estado final y escalamiento manual sobre los cinco casos.
 
 Para probar ejecución real, presioná `Cargar fuente` con un `.py` o `.ipynb` y después `Ejecutar Python`. La primera corrida puede tardar porque carga Pyodide en un Web Worker; el resultado muestra estado, duración, imports detectados y salida o traceback. Un timeout o un runtime no disponible se informa como estado distinto de un error de Python.
+
+La memoria local se activa automáticamente en navegadores con IndexedDB. Guarda la fuente, el diagnóstico, la QA y el benchmark sólo en este dispositivo; el panel lateral muestra su estado y permite `Borrar memoria`. No guarda credenciales ni envía nada a un endpoint remoto. El límite es de 500.000 caracteres para la fuente y 100.000 para el traceback.
 
 El panel `Benchmark A–D` ejecuta una comparación reproducible: A usa reglas locales, B mide reglas más contexto, y C/D dejan Glimmer/Spark como `sin configurar` hasta conectar un modelo real. Sólo una reparación que pasa todos los checkers cuenta como resuelta.
 

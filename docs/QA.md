@@ -12,6 +12,7 @@ Toda modificación funcional debe sumar o actualizar una prueba antes de conside
 6. Leer el diff completo y revisar que los checkers no estén aceptando sólo porque desapareció el traceback.
 6. Todo caso reparable debe tener un test de punta a punta: falla antes del patch y pasa después.
 7. Los tests de modelos usan un `fetch` simulado: nunca dependen de la red ni de una key.
+8. La memoria local se prueba con un backend en memoria: guardar, restaurar, borrar y límite de tamaño.
 
 ## Matriz semilla
 

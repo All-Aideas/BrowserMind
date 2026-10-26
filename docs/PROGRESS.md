@@ -20,14 +20,15 @@ Fecha de arranque: 25 de octubre de 2026.
 - Harness integrado (26 oct): `ModelHarness` se conecta al ciclo de Glimmer; cada propuesta queda `received` sólo hasta la validación final y luego registra `accepted`/`rejected` con porcentaje de checkers, sin dejar ambiguos ni cambios fuera de contexto como pendientes.
 - Benchmark reproducible (26 oct): panel A–D con 20 tareas sobre cinco casos; reporta resolución, revisión manual, tokens de contexto y configuraciones de Glimmer/Spark no conectadas sin maquillarlas como éxito.
 - Reintento controlado (26 oct): `retrySessionRepair` reenvía diff y checkers rojos, limita intentos/tokens y sólo actualiza el editor cuando el segundo patch pasa todos los checkers.
+- Memoria local (26 oct): IndexedDB versionado para fuente, sesión y benchmark, con límite de tamaño, restauración al abrir y borrado explícito; el fallback en memoria permite probar el contrato sin navegador.
+- Diagnóstico robusto (26 oct): errores desconocidos usan la línea del traceback y el contexto elimina solapamientos entre líneas editables y definiciones de sólo lectura.
 
 ## Próximo orden
 
-1. Agregar memoria de sesión IndexedDB para fuentes y resultados, con borrado explícito.
-2. Agregar selector progresivo de contexto y presupuesto de tokens más fino.
-3. Ejecutar contra un proveedor real de Glimmer y comparar tokens/latencia/calidad.
-4. Integrar Spark (nivel 3) cuando esté disponible la API key.
-5. Modo replay y demo pública para el jurado.
+1. Agregar selector progresivo de contexto y presupuesto de tokens más fino.
+2. Ejecutar contra un proveedor real de Glimmer y comparar tokens/latencia/calidad.
+3. Integrar Spark (nivel 3) cuando esté disponible la API key.
+4. Modo replay y demo pública para el jurado.
 
 ## Decisión de diseño
 

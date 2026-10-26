@@ -79,13 +79,18 @@ function firstMatchingLine(lines: string[], pattern: RegExp): number | undefined
   return index === -1 ? undefined : index + 1;
 }
 
+function tracebackLine(lines: string[], traceback: string): number | undefined {
+  const reported = Number(traceback.match(TRACEBACK_LINE_PATTERN)?.[1]);
+  return reported >= 1 && reported <= lines.length ? reported : undefined;
+}
+
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function locateLine(lines: string[], traceback: string, rule: ClassificationRule, subject?: string): number | undefined {
-  const reported = Number(traceback.match(TRACEBACK_LINE_PATTERN)?.[1]);
-  if (reported >= 1 && reported <= lines.length) return reported;
+  const reported = tracebackLine(lines, traceback);
+  if (reported) return reported;
   if (rule.kind === "missing-column" && subject) {
     const access = new RegExp(`\\[\\s*["']${escapeRegExp(subject)}["']\\s*\\]`);
     const line = firstMatchingLine(lines, access);
@@ -111,7 +116,10 @@ export function classifyError(source: string, traceback: string, sink?: FlagTarg
         confidence: 0.2,
         repairable: false,
         nextStep: "Conservar el traceback y escalar sólo el contexto mínimo a un modelo externo.",
-        line: firstMatchingLine(lines, /raise\s+/),
+        // Incluso sin una firma conocida, el traceback sigue siendo la mejor
+        // evidencia de dónde centrar el contexto. Caer a la primera línea del
+        // script mandaba líneas irrelevantes (1-3) al modelo.
+        line: tracebackLine(lines, traceback) ?? firstMatchingLine(lines, /raise\s+/),
       };
     }
 
@@ -163,7 +171,11 @@ export function selectContext(
 
     const render = (numbers: number[]) => numbers.map((line) => `${line}: ${redactSensitive(lines[line - 1])}`).join("\n");
     const orderedLines = [...selected].sort((a, b) => a - b);
-    const readOnlyLines = [...readOnly].sort((a, b) => a - b);
+    // Una línea no puede viajar dos veces ni ser editable y sólo lectura a la
+    // vez. Esto evita contextos duplicados cuando una definición multilinea
+    // cruza la ventana centrada en el error.
+    const readOnlyLines = [...readOnly].filter((line) => !selected.has(line)).sort((a, b) => a - b);
+    const contextLines = [...new Set([...orderedLines, ...readOnlyLines])].sort((a, b) => a - b);
     const payload = [
       readOnlyLines.length ? `# definiciones (sólo lectura)\n${render(readOnlyLines)}\n\n# código editable\n` : "",
       render(orderedLines) || "Sin código contextual seleccionado.",
@@ -176,7 +188,7 @@ export function selectContext(
       .map((symbol) => symbol.name);
 
     return {
-      lines: [...orderedLines, ...readOnlyLines].sort((a, b) => a - b),
+      lines: contextLines,
       readOnlyLines,
       symbols: [...new Set(symbols)],
       payload,

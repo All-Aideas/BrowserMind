@@ -7,6 +7,7 @@ import { createBrowserPythonRuntime, type PythonExecutionResult, type PythonRunt
 import { retrySessionRepair } from "./core/retry";
 import { SAMPLE_CASES, type SampleCase } from "./core/samples";
 import { loadSourceFile } from "./core/sourceLoader";
+import { createBrowserMindMemory } from "./core/memory";
 import type { DiagnosticSession, FunctionFlag } from "./core/types";
 
 function statusLabel(session: DiagnosticSession | undefined): string {
@@ -29,6 +30,15 @@ function executionStatusLabel(result: PythonExecutionResult): string {
   return "Traceback capturado";
 }
 
+type MemoryStatus = "loading" | "empty" | "saved" | "unavailable";
+
+function memoryStatusLabel(status: MemoryStatus): string {
+  if (status === "loading") return "CARGANDO";
+  if (status === "saved") return "GUARDADA";
+  if (status === "unavailable") return "NO DISPONIBLE";
+  return "VACÍA";
+}
+
 // El endpoint es el proxy local de Vite: la API key queda del lado del servidor.
 const glimmer = new GlimmerAdapter({
   endpoint: GLIMMER_PROXY_ENDPOINT,
@@ -49,14 +59,57 @@ export function App() {
   const [execution, setExecution] = useState<PythonExecutionResult>();
   const [executionFlags, setExecutionFlags] = useState<FunctionFlag[]>([]);
   const [executing, setExecuting] = useState(false);
+  const [memoryReady, setMemoryReady] = useState(false);
+  const [memoryStatus, setMemoryStatus] = useState<MemoryStatus>("loading");
   const escalation = useRef<AbortController | undefined>(undefined);
   const pythonRuntime = useRef<PythonRuntime | undefined>(undefined);
+  const memory = useRef(createBrowserMindMemory());
   const fileInput = useRef<HTMLInputElement>(null);
   const executionGeneration = useRef(0);
 
   useEffect(() => () => {
     pythonRuntime.current?.dispose();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void memory.current.load().then((snapshot) => {
+      if (!active) return;
+      if (snapshot.source) {
+        const restoredSample = SAMPLE_CASES.find((sample) => sample.id === snapshot.source?.selectedSampleId);
+        if (restoredSample) setSelectedSample(restoredSample);
+        setCode(snapshot.source.code);
+        setTraceback(snapshot.source.traceback);
+        setBenchmarkMode(snapshot.source.benchmarkMode);
+      }
+      if (snapshot.session?.session) setSession(snapshot.session.session);
+      if (snapshot.session?.productQa) setProductQa(snapshot.session.productQa);
+      if (snapshot.benchmark?.report) setBenchmark(snapshot.benchmark.report);
+      setMemoryStatus(snapshot.source ? "saved" : "empty");
+    }).catch(() => {
+      if (active) setMemoryStatus("unavailable");
+    }).finally(() => {
+      if (active) setMemoryReady(true);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!memoryReady) return;
+    const timer = window.setTimeout(() => {
+      void memory.current.save({
+        source: {
+          selectedSampleId: selectedSample.id,
+          benchmarkMode,
+          code,
+          traceback,
+        },
+        session: session || productQa ? { session, productQa } : undefined,
+        benchmark: benchmark ? { report: benchmark } : undefined,
+      }).then(() => setMemoryStatus("saved")).catch(() => setMemoryStatus("unavailable"));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [benchmark, benchmarkMode, code, memoryReady, productQa, selectedSample.id, session, traceback]);
 
   const passedChecks = session?.checkers.filter((checker) => checker.passed).length ?? 0;
 
@@ -80,6 +133,17 @@ export function App() {
   function resetSession(): void {
     escalation.current?.abort();
     setSession(undefined);
+  }
+
+  async function clearMemory(): Promise<void> {
+    try {
+      await memory.current.clear();
+      setMemoryStatus("empty");
+      setToast("Memoria local borrada. El código actual sigue visible hasta que cambies de caso o recargues.");
+    } catch (error) {
+      setMemoryStatus("unavailable");
+      setToast(error instanceof Error ? error.message : "No se pudo borrar la memoria local.");
+    }
   }
 
   // Una edición invalida el análisis: aplicar un patch viejo pisaría lo que el usuario escribió.
@@ -281,6 +345,7 @@ export function App() {
             <span><strong>Modo benchmark Meta</strong>Permite enviar el contexto redactado a Muse Glimmer. Usalo sólo con datos sintéticos o públicos: con un endpoint remoto no hay privacidad total.</span>
           </label>
           <div className="scope-note"><span>i</span><p>{benchmarkMode ? "Sólo viaja lo que ves en «Contexto que viajaría», y únicamente cuando presionás «Escalar»." : "El contenido queda en esta sesión. Nada se envía a un modelo externo."}</p></div>
+          <div className="scope-note memory-note"><span>⌁</span><div><p><strong>Memoria local · {memoryStatusLabel(memoryStatus)}</strong><br />Fuente, sesión y benchmark se guardan sólo en este navegador.</p><button type="button" className="button secondary memory-button" onClick={clearMemory}>Borrar memoria</button></div></div>
           <div className="example-card"><span className="label-muted">EJEMPLO GUIADO</span><strong>KeyError → columna existente</strong><p>Analizá el caso seleccionado y verificá que `revenue` se corrige a `revenue_total` sin llamar a una API.</p></div>
         </aside>
 

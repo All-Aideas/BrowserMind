@@ -108,6 +108,13 @@ La QA no llama a Glimmer ni necesita key. Comprueba el flujo completo con los da
 3. `A` cuenta reglas locales verificadas; `B` mide el mismo flujo con el contexto estimado; `C` (Glimmer) y `D` (Spark) aparecen como `sin configurar` mientras no exista un adaptador real.
 4. Una tarea sólo aparece como `resuelta` si el patch se aplica y todos los checkers pasan. `manual` y `sin configurar` no inflan la tasa.
 
+## 4d. Comprobar la memoria local
+
+1. Ejecutá un análisis o un benchmark y recargá la página.
+2. El caso, el código, el diagnóstico y el reporte deben reaparecer; el panel lateral debe mostrar `Memoria local · GUARDADA`.
+3. Presioná `Borrar memoria` y recargá: la app vuelve a la fuente semilla inicial.
+4. La memoria usa IndexedDB local, no guarda credenciales y tiene límites de 500.000 caracteres para la fuente y 100.000 para el traceback.
+
 ## 5. Cómo leer los flags
 
 En `Flags de ejecución`, cada función publica su resultado:
@@ -135,4 +142,4 @@ Con el modo benchmark apagado el contexto no viaja a ningún modelo. Con el modo
 
 ## 8. Qué todavía no hace
 
-Este tutorial cubre el MVP de análisis determinista, ejecución local con Pyodide y escalamiento benchmark a Glimmer mediante un endpoint compatible con OpenAI. Todavía falta persistir sesiones en IndexedDB, probar con un proveedor real y agregar Spark/reintentos.
+Este tutorial cubre el MVP de análisis determinista, ejecución local con Pyodide, memoria local y escalamiento benchmark a Glimmer mediante un endpoint compatible con OpenAI. Todavía falta probar con un proveedor real y agregar Spark.

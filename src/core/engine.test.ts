@@ -45,6 +45,23 @@ describe("clasificación", () => {
     expect(diagnostic.confidence).toBeLessThan(0.9);
   });
 
+  it("centra un error desconocido en la línea informada por el traceback", () => {
+    const source = [
+      "header = 0",
+      "noise_1 = 1",
+      "noise_2 = 2",
+      "noise_3 = 3",
+      "noise_4 = 4",
+      "noise_5 = 5",
+      "result = process(data)",
+      "footer = 9",
+    ].join("\n");
+    const diagnostic = classifyError(source, 'File "pipeline.py", line 7\nRuntimeError: proveedor no disponible');
+    expect(diagnostic.kind).toBe("unknown");
+    expect(diagnostic.line).toBe(7);
+    expect(selectContext(source, parsePython(source), diagnostic).payload).toContain("7: result = process(data)");
+  });
+
   it("no marca como reparables los casos que requieren revisión manual", () => {
     expect(runDiagnosticSession(sample("shape-mismatch").code, sample("shape-mismatch").traceback).diagnostic.repairable).toBe(false);
     expect(runDiagnosticSession(sample("merge-alignment").code, sample("merge-alignment").traceback).diagnostic.repairable).toBe(false);
@@ -110,6 +127,23 @@ describe("contexto y privacidad", () => {
     const context = selectContext(source, parsePython(source), diagnostic);
     expect(context.symbols).toContain("near");
     expect(context.symbols).not.toContain("far_0");
+  });
+
+  it("no duplica líneas cuando una definición multilinea cruza la ventana del error", () => {
+    const source = [
+      "import pandas as pd",
+      "orders = pd.DataFrame({",
+      '  "customer_id": [1],',
+      '  "total": [20],',
+      "})",
+      "profiles = pd.DataFrame({\"customer_id\": [1]})",
+      "result = process(orders)",
+    ].join("\n");
+    const diagnostic = classifyError(source, 'File "pipeline.py", line 7\nRuntimeError: proveedor no disponible');
+    const context = selectContext(source, parsePython(source), diagnostic);
+    expect(new Set(context.lines).size).toBe(context.lines.length);
+    expect(context.readOnlyLines).not.toEqual(expect.arrayContaining([5]));
+    expect(context.lines.filter((line) => context.readOnlyLines.includes(line))).toEqual(context.readOnlyLines);
   });
 });
 
