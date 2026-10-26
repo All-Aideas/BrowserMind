@@ -84,16 +84,18 @@ export function parseGeneratedPatch(content: string): GeneratedPatch {
 export class GlimmerAdapter implements ModelAdapter {
   readonly level = 2 as const;
   readonly model: string;
+  readonly harness: ModelHarness;
   private readonly config: Required<Omit<GlimmerConfig, "fetchImpl">> & { fetchImpl: typeof fetch };
 
   constructor(config: GlimmerConfig) {
     this.model = config.model;
+    this.harness = config.harness ?? new ModelHarness();
     this.config = {
       maxTokens: 512,
       timeoutMs: 30_000,
       ...config,
       fetchImpl: config.fetchImpl ?? ((...args) => fetch(...args)),
-      harness: config.harness ?? new ModelHarness(),
+      harness: this.harness,
     };
   }
 
@@ -199,15 +201,6 @@ export class GlimmerAdapter implements ModelAdapter {
         origin: "model",
       },
     };
-    this.config.harness.record({
-      model: this.model,
-      level: this.level,
-      promptTokens: usage.promptTokens,
-      completionTokens: usage.completionTokens,
-      latencyMs: usage.latencyMs,
-      status: "received",
-      rationale,
-    });
     return proposal;
   }
 }

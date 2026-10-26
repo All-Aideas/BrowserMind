@@ -49,6 +49,22 @@ El resultado correcto es:
 
 Si editás el código o el traceback después de analizar, el resultado se borra y hay que volver a analizar: así un patch viejo nunca pisa tus cambios.
 
+## 2b. Ejecutar una fuente real en Python
+
+1. Presioná `Cargar fuente` y elegí un `.py`, `.txt` o `.ipynb`.
+2. Para un notebook, las celdas de código se unen en un editor Python y el markdown se conserva como comentarios; revisá el resultado antes de ejecutarlo.
+3. Presioná `Ejecutar Python`. La primera vez se descarga Pyodide desde un CDN versionado dentro de un Web Worker.
+4. Revisá el panel `RUNTIME LOCAL · PYODIDE`:
+   - `Ejecución aprobada` muestra stdout, imports detectados y duración;
+   - `Traceback capturado` muestra stderr/traceback sin convertirlo automáticamente en un patch;
+   - `Tiempo agotado` significa que el worker fue terminado por superar 30 segundos;
+   - `Runtime no disponible` significa que el navegador no pudo crear el worker o cargar Pyodide.
+5. Presioná `Usar traceback y analizar` para encadenar el error capturado con el diagnóstico y pasar por los checkers existentes sin copiar/pegar.
+
+La ejecución y el análisis son pasos separados: que Python corra no demuestra que el resultado sea correcto, y que haya traceback no autoriza a aplicar un patch sin checker.
+
+Si un patch generado por Glimmer falla un checker, aparece `Reintentar con feedback`. El segundo intento recibe el diff y los checkers rojos, pero queda limitado a dos llamadas y 1.024 tokens adicionales; si no alcanza, se conserva el código original.
+
 ## 3. Probar un caso sin reparación automática
 
 Con el modo benchmark apagado, elegí `ValueError · shape` y analizá. El comportamiento correcto no es inventar un patch: debe aparecer `Revisión manual requerida`, explicar que hay que comparar la cantidad real de features contra el contrato del modelo y mostrar `ESCALAMIENTO · NIVEL 2` con `Muse Glimmer · no conectado`.
@@ -85,6 +101,13 @@ Si el endpoint no está levantado, el popup dice `No se pudo conectar con Glimme
 
 La QA no llama a Glimmer ni necesita key. Comprueba el flujo completo con los datos sintéticos: diagnóstico correcto, reparación local cuando existe, checkers verdes y escalamiento manual para shape/merge. Si cambiás una muestra o una regla y el contrato se rompe, la tarjeta del caso queda roja y muestra en qué etapa falló.
 
+## 4c. Ejecutar el benchmark A–D
+
+1. Bajá hasta `Benchmark A–D` y presioná `Ejecutar benchmark`.
+2. El reporte genera 20 tareas: cinco casos semilla para cada configuración.
+3. `A` cuenta reglas locales verificadas; `B` mide el mismo flujo con el contexto estimado; `C` (Glimmer) y `D` (Spark) aparecen como `sin configurar` mientras no exista un adaptador real.
+4. Una tarea sólo aparece como `resuelta` si el patch se aplica y todos los checkers pasan. `manual` y `sin configurar` no inflan la tasa.
+
 ## 5. Cómo leer los flags
 
 En `Flags de ejecución`, cada función publica su resultado:
@@ -112,4 +135,4 @@ Con el modo benchmark apagado el contexto no viaja a ningún modelo. Con el modo
 
 ## 8. Qué todavía no hace
 
-Este tutorial cubre el MVP de análisis determinista y el escalamiento benchmark a Glimmer mediante un endpoint compatible con OpenAI. Todavía falta ejecutar Python real con Pyodide dentro de un Web Worker, cargar `.py`/`.ipynb`, persistir sesiones en IndexedDB, probar con un proveedor real y agregar Spark/reintentos.
+Este tutorial cubre el MVP de análisis determinista, ejecución local con Pyodide y escalamiento benchmark a Glimmer mediante un endpoint compatible con OpenAI. Todavía falta persistir sesiones en IndexedDB, probar con un proveedor real y agregar Spark/reintentos.

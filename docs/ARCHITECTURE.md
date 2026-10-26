@@ -2,7 +2,7 @@
 
 ## Capas
 
-1. `src/App.tsx`: interfaz, carga de casos, editor, popup y visualización de resultados.
+1. `src/App.tsx`: interfaz, carga de casos y fuentes, editor, ejecución local, popup y visualización de resultados.
 2. `src/core/parser.ts`: índice estructural de imports, variables, funciones y líneas.
 3. `src/core/diagnostics.ts`: clasificación local y selección de contexto mínimo.
 4. `src/core/patches.ts`: propuestas deterministas, aplicación protegida y error ubicable.
@@ -10,6 +10,11 @@
 6. `src/core/escalation.ts`: plan de escalamiento por niveles (0 reglas · 1 modelo pequeño · 2 Muse Glimmer · 3 Muse Spark) y contrato `ModelAdapter`.
 7. `src/core/flags.ts`: trazabilidad de cada función pública del núcleo.
 8. `src/core/engine.ts`: orquestación de una sesión completa.
+9. `src/core/sourceLoader.ts`: conversión validada de `.py`/`.txt`/`.ipynb` a una fuente Python revisable.
+10. `src/core/pythonRuntime.ts`: contrato testeable del runner, timeout y clasificación de disponibilidad/error.
+11. `src/runtime/python.worker.ts`: Web Worker aislado que carga Pyodide 0.26.4 bajo demanda, captura stdout/stderr y devuelve traceback.
+12. `src/core/benchmark.ts`: 20 tareas reproducibles A–D; cuenta sólo reparaciones verificadas y conserva explícitos los modelos no configurados.
+13. `src/core/retry.ts`: reintento acotado con diff/checkers rojos y presupuesto generativo.
 
 ## Contrato de cada función de diagnóstico
 
@@ -35,8 +40,16 @@ El contexto se deriva localmente del código y traceback. `redactSensitive` reem
 
 `escalateSession` (en `engine.ts`) envía sólo `session.context`, suma `calls`, tokens generativos y latencia, y descarta el patch si `before` no aparece exactamente una vez en el código (si se repite, el reemplazo podría tocar otras líneas, como la definición de los datos). Un patch del modelo se aplica una sola vez. El patch queda marcado `origin: "model"` y no se aplica solo: al aplicarlo corren los checkers del tipo de error más `within-context`, que rechaza cambios fuera de las líneas editables que el modelo recibió.
 
+`ModelHarness` recibe el registro de la propuesta desde `escalateSession`, conserva `received` mientras la respuesta está pendiente y lo finaliza como `accepted` o `rejected` con `checkerPassRate`. Los errores de red, JSON inválido y respuestas vacías se registran como `failed`/`empty`; no se mezclan con una aceptación por el solo hecho de que el modelo haya devuelto JSON.
+
+`retrySessionRepair` sólo trabaja con patches de modelo rechazados. Construye un nuevo contexto a partir del payload original más el diff y los mensajes de los checkers rojos, permite como máximo dos llamadas y 1.024 tokens adicionales por defecto, y conserva el código original si el nuevo resultado no queda verificado.
+
 La API key vive en `.env.local` y la usa el proxy `/api/glimmer` de `vite.config.ts`; el cliente sólo conoce `VITE_GLIMMER_MODEL`.
+
+## Ejecución local
+
+`PythonRuntime` crea un worker por corrida, envía el código sin pasar por Glimmer y termina el worker cuando llega el resultado o vence el timeout. El worker importa Pyodide desde una URL CDN versionada, llama `loadPackagesFromImports` y luego `runPythonAsync`. El resultado se mantiene en React; todavía no se persiste en IndexedDB. Este diseño sigue el patrón de worker modular documentado por Pyodide.
 
 ## Evolución prevista
 
-La interfaz de adaptador seguirá las operaciones del PDF: `index`, `locate`, `select_context`, `apply_patch`, `verify`. El siguiente adaptador de ejecución será Pyodide dentro de un Web Worker, con un checker independiente del generador.
+La interfaz de adaptador seguirá las operaciones del PDF: `index`, `locate`, `select_context`, `apply_patch`, `verify`. El siguiente adaptador será la persistencia de sesión; el runtime local ya está separado del generador y de los checkers.

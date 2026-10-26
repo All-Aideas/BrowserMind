@@ -25,6 +25,8 @@ Si se recarga o se cierra la pestaña, ese estado se pierde. No se guarda todav�
 - El único servidor actual es el servidor de desarrollo local de Vite.
 - El contexto visible en la interfaz se arma desde el código y el traceback de la sesión, con rutas locales y correos redactados.
 - Las llamadas, tokens y latencia del modelo sólo viven en la sesión de la pestaña.
+- La ejecución local con Pyodide tampoco persiste código, variables ni paquetes: el worker se crea por corrida y se termina al finalizar.
+- La primera ejecución de Python descarga Pyodide desde un CDN versionado; el código del usuario se mantiene en la pestaña y no se envía a Glimmer por esa acción.
 
 Esto es una garantía del estado actual del MVP, no una promesa para futuras integraciones remotas.
 
@@ -47,9 +49,9 @@ La implementación deberá incluir:
 
 ## Cómo comprobar el estado hoy
 
-1. Abrí DevTools del navegador y recargá la página: el diagnóstico vuelve a `Esperando análisis`.
-2. Ejecutá un caso: los datos aparecen sólo en la interfaz de esa pestaña.
+1. Abrí DevTools del navegador y recargá la página: el diagnóstico y la ejecución vuelven a su estado inicial.
+2. Ejecutá un `.py`: la salida aparece sólo en la interfaz de esa pestaña; el Web Worker no conserva estado al terminar.
 3. En Application/Storage no debería existir una base IndexedDB creada por BrowserMind.
-4. En Network no debería aparecer una llamada a un endpoint de modelo al usar `Analizar localmente` o `Aplicar y verificar`. La única llamada posible es `POST /api/glimmer/chat/completions`, al escalar.
+4. En Network puede aparecer la descarga de Pyodide al presionar `Ejecutar Python`; no debería aparecer un endpoint de modelo. La única llamada de modelo posible es `POST /api/glimmer/chat/completions`, al escalar con el modo benchmark.
 
 Cuando IndexedDB se implemente, este archivo debe actualizarse y los tests deben comprobar persistencia, borrado y redacción.

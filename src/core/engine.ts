@@ -71,6 +71,10 @@ export async function escalateSession(
   const proposal = await traceAsync(flags, "escalateToModel", () =>
     adapter.proposePatch(session.context, session.diagnostic, signal));
 
+  const harnessValidation = proposal.patch && adapter.harness
+    ? adapter.harness.recordProposal(session.source, adapter.model, adapter.level, proposal)
+    : undefined;
+
   // El fragmento debe aparecer exactamente una vez: si falta no se puede aplicar, y si se
   // repite el reemplazo podría tocar otras líneas (por ejemplo, la definición de los datos).
   const occurrences = proposal.patch ? countOccurrences(session.source, proposal.patch.before) : 0;
@@ -86,6 +90,27 @@ export async function escalateSession(
       message: `Patch descartado: ${rejection}`,
       details: proposal.patch.before,
     });
+    if (harnessValidation?.recordId && adapter.harness && harnessValidation.accepted) {
+      adapter.harness.finalizeProposal(harnessValidation.recordId, false, 0, rejection);
+    }
+  }
+
+  if (matches && harnessValidation?.recordId && adapter.harness && proposal.patch) {
+    let checkerPassRate = 0;
+    let accepted = false;
+    let rationale = "El patch pasó la validación estructural y los checkers.";
+    try {
+      const patchedSource = applyPatch(session.source, proposal.patch);
+      const checkerResults = runCheckers(patchedSource, session.diagnostic);
+      const editable = session.context.lines.filter((line) => !session.context.readOnlyLines.includes(line));
+      if (proposal.patch.origin === "model") checkerResults.push(checkChangesWithinContext(session.source, patchedSource, editable));
+      checkerPassRate = checkerResults.length === 0 ? 0 : checkerResults.filter((checker) => checker.passed).length / checkerResults.length;
+      accepted = checkerResults.length > 0 && checkerPassRate === 1;
+      if (!accepted) rationale = `El patch fue rechazado por los checkers (${Math.round(checkerPassRate * 100)}% aprobados).`;
+    } catch (error) {
+      rationale = error instanceof Error ? error.message : "No se pudo verificar el patch generado.";
+    }
+    adapter.harness.finalizeProposal(harnessValidation.recordId, accepted, checkerPassRate, rationale);
   }
 
   const { usage } = proposal;

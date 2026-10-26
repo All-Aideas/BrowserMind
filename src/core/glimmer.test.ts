@@ -61,6 +61,8 @@ describe("GlimmerAdapter en modo benchmark", () => {
     const repaired = applySessionRepair(escalated);
     expect(repaired.status).toBe("verified");
     expect(repaired.checkers.map((checker) => checker.id)).toEqual(["syntax-delimiters", "merge-keys", "within-context"]);
+    expect(adapter.harness?.totals()).toMatchObject({ calls: 1, acceptedCalls: 1, rejectedCalls: 0 });
+    expect(adapter.harness?.all()[0]).toMatchObject({ status: "accepted", checkerPassRate: 1 });
   });
 
   it("envía sólo el contexto redactado, nunca el resto del script", async () => {
@@ -96,6 +98,7 @@ describe("GlimmerAdapter en modo benchmark", () => {
     expect(escalated.patch).toBeUndefined();
     expect(escalated.modelNote).toMatch(/descartó/);
     expect(escalated.metrics.calls).toBe(1);
+    expect(adapter.harness?.all()[0]).toMatchObject({ status: "rejected" });
   });
 
   it("rechaza en el checker un patch que toca líneas fuera del contexto", async () => {
@@ -106,6 +109,7 @@ describe("GlimmerAdapter en modo benchmark", () => {
     const repaired = applySessionRepair(await escalateSession(session, adapter));
     expect(repaired.status).toBe("failed");
     expect(repaired.checkers.find((checker) => checker.id === "within-context")?.passed).toBe(false);
+    expect(adapter.harness?.all()[0]).toMatchObject({ status: "rejected", checkerPassRate: 1 / 3 });
   });
 
   it("propaga un error HTTP con el estado y deja el flag de error", async () => {
@@ -138,6 +142,7 @@ describe("seguridad de patches generados", () => {
     const escalated = await escalateSession(runDiagnosticSession(code, traceback, [adapter]), adapter);
     expect(escalated.patch).toBeUndefined();
     expect(escalated.modelNote).toMatch(/2 veces.*ambiguo/);
+    expect(adapter.harness?.all()[0]).toMatchObject({ status: "rejected", checkerPassRate: 0 });
   });
 
   it("aplica el patch del modelo una sola vez y sin interpretar `$` en el reemplazo", () => {

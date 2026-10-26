@@ -60,10 +60,10 @@
         "src/core/productQa.ts"
       ],
       "acceptance": "Tabla reproducible: % resuelto, % sin generación, tokens por tarea resuelta, llamadas, latencia, por configuración.",
-      "status": "todo",
-      "owner": null,
+      "status": "done",
+      "owner": "B",
       "proposedOwner": "B",
-      "updated": "2026-10-26T03:10:00.000Z"
+      "updated": "2026-10-26T10:18:38.309Z"
     },
     {
       "id": "T4",
@@ -105,9 +105,9 @@
         "src/core/escalation.ts"
       ],
       "acceptance": "Máximo N reintentos dentro del presupuesto; cada uno registrado; test con fetch simulado.",
-      "status": "todo",
-      "owner": null,
-      "updated": "2026-10-26T03:10:00.000Z"
+      "status": "done",
+      "owner": "B",
+      "updated": "2026-10-26T10:32:02.004Z"
     },
     {
       "id": "T7",
