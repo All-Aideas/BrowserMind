@@ -1,0 +1,157 @@
+{
+  "goal": "Ganar el Meta Global AI Developer Hackathon (entrega 4 nov 2026, 21:00 ET)",
+  "tasks": [
+    {
+      "id": "T0",
+      "priority": "P0",
+      "title": "Canal entre agentes y contexto compacto",
+      "why": "Los dos agentes no sabían qué hacía el otro ni por qué; cada sesión leía ~600 líneas de docs.",
+      "files": [
+        "agents/",
+        "scripts/agents.mjs",
+        "AGENTS.md"
+      ],
+      "acceptance": "npm run agents -- status muestra tablero, preguntas y conflictos; tests del CLI en verde.",
+      "status": "done",
+      "owner": "A",
+      "updated": "2026-10-26T03:10:00.000Z"
+    },
+    {
+      "id": "T1",
+      "priority": "P0",
+      "title": "Ejecutar Python real con Pyodide en un Web Worker",
+      "why": "Criterio de aceptación 1 del PDF y 'whether it works' del jurado: hoy el traceback se pega a mano y ningún patch se ejecuta.",
+      "files": [
+        "src/core/pythonRuntime.ts",
+        "src/runtime/",
+        "src/App.tsx",
+        "src/styles.css"
+      ],
+      "acceptance": "Los 5 casos producen su traceback real en el navegador sin bloquear la UI; los patches verificados ejecutan sin error; tests de éxito y de traceback.",
+      "status": "done",
+      "owner": "B",
+      "updated": "2026-10-26T10:14:11.257Z"
+    },
+    {
+      "id": "T2",
+      "priority": "P0",
+      "title": "Conectar un modelo Meta real: Muse Spark vía Meta Model API (nivel 3)",
+      "why": "Ningún modelo real fue probado todavía. Spark lo sirve Meta (api.meta.ai/v1, compatible con OpenAI) y es la herramienta del hackatón; Glimmer requiere hosting propio o de terceros.",
+      "files": [
+        "src/core/metaModelApi.ts",
+        "src/core/metaModelApi.test.ts",
+        "vite.config.ts",
+        ".env.example"
+      ],
+      "acceptance": "Adaptador de Meta Model API (Spark, nivel 3) en archivo nuevo, testeado con fetch simulado; proxy /api/meta con la key del lado servidor; llamada real cuando el usuario cargue MODEL_API_KEY. Integración en glimmer.ts/escalation.ts/App.tsx recién cuando cierre T4.",
+      "status": "doing",
+      "owner": "A",
+      "proposedOwner": "A",
+      "updated": "2026-10-26T10:16:32.002Z"
+    },
+    {
+      "id": "T3",
+      "priority": "P1",
+      "title": "Benchmark de 15-30 tareas con configuraciones A-D y reporte de tokens por tarea resuelta",
+      "why": "Es la tesis del producto (misma tasa de resolución con menos tokens) y lo que lo diferencia ante el jurado; hoy hay 5 casos.",
+      "files": [
+        "src/core/benchmark/",
+        "src/core/samples.ts",
+        "src/core/productQa.ts"
+      ],
+      "acceptance": "Tabla reproducible: % resuelto, % sin generación, tokens por tarea resuelta, llamadas, latencia, por configuración.",
+      "status": "todo",
+      "owner": null,
+      "proposedOwner": "B",
+      "updated": "2026-10-26T03:10:00.000Z"
+    },
+    {
+      "id": "T4",
+      "priority": "P1",
+      "title": "Integrar el harness: un registro por sesión y una sola validación de patches",
+      "why": "harness.ts deja las llamadas en 'received' y valida distinto que engine.ts (que exige fragmento único); sin esto no se mide el % aceptado por checker.",
+      "files": [
+        "src/core/harness.ts",
+        "src/core/engine.ts",
+        "src/core/glimmer.ts"
+      ],
+      "acceptance": "Cada llamada termina accepted/rejected/failed según los checkers; validación compartida; tests.",
+      "status": "done",
+      "owner": "B",
+      "proposedOwner": "B",
+      "updated": "2026-10-26T10:16:34.056Z"
+    },
+    {
+      "id": "T5",
+      "priority": "P1",
+      "title": "Cargar archivos .py y .ipynb",
+      "why": "Paso 1 del flujo principal del PDF; hoy sólo hay casos semilla y edición manual.",
+      "files": [
+        "src/core/sourceLoader.ts",
+        "src/App.tsx"
+      ],
+      "acceptance": "Se carga un .py y un .ipynb público; celdas indexadas; nada sale del navegador.",
+      "status": "done",
+      "owner": "B",
+      "updated": "2026-10-26T10:14:15.716Z"
+    },
+    {
+      "id": "T6",
+      "priority": "P1",
+      "title": "Reintento con diff y traceback cuando el checker rechaza, con presupuesto de tokens",
+      "why": "Día 6 del plan; convierte un rechazo en un segundo intento barato en vez de escalar directo.",
+      "files": [
+        "src/core/engine.ts",
+        "src/core/escalation.ts"
+      ],
+      "acceptance": "Máximo N reintentos dentro del presupuesto; cada uno registrado; test con fetch simulado.",
+      "status": "todo",
+      "owner": null,
+      "updated": "2026-10-26T03:10:00.000Z"
+    },
+    {
+      "id": "T7",
+      "priority": "P2",
+      "title": "Demo para el jurado: modo replay, video y deploy público con backend para la key",
+      "why": "El jurado evalúa si funciona; el proxy de Vite no existe en un deploy estático.",
+      "files": [
+        "src/App.tsx",
+        "docs/"
+      ],
+      "acceptance": "URL pública + video de 2-3 min con un caso local y uno escalado a Meta.",
+      "status": "todo",
+      "owner": null,
+      "updated": "2026-10-26T03:10:00.000Z"
+    },
+    {
+      "id": "T8",
+      "priority": "P2",
+      "title": "LICENSE y CI con npm run qa en GitHub",
+      "why": "El repo es público: sin licencia no se puede reutilizar y sin CI la regla de QA no se hace cumplir sola.",
+      "files": [
+        ".github/",
+        "LICENSE"
+      ],
+      "acceptance": "Licencia elegida por el usuario; Action en verde en main.",
+      "status": "todo",
+      "owner": null,
+      "proposedOwner": "user",
+      "updated": "2026-10-26T03:10:00.000Z"
+    },
+    {
+      "id": "T9",
+      "priority": "P2",
+      "title": "Unificar los protocolos de colaboración en el canal",
+      "why": "docs/AI_COLLABORATION.md (B) y docs/COORDINATION.md (A) describen el mismo proceso por separado y ya divergen (36 vs 42 tests).",
+      "files": [
+        "docs/AI_COLLABORATION.md",
+        "docs/COORDINATION.md"
+      ],
+      "acceptance": "Un solo protocolo; el estado vivo sólo en agents/.",
+      "status": "todo",
+      "owner": null,
+      "proposedOwner": "B",
+      "updated": "2026-10-26T03:10:00.000Z"
+    }
+  ]
+}

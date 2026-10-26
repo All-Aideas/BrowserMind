@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "check": "tsc -b --noEmit",
     "qa": "npm test && npm run check && npm run build",
-    "qa:fast": "npm test && npm run check"
+    "qa:fast": "npm test && npm run check",
+    "agents": "node scripts/agents.mjs"
   },
   "dependencies": {
     "react": "19.3.1",

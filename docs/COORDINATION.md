@@ -1,5 +1,7 @@
 # Coordinación entre agentes
 
+> **Desde el 26 oct el estado vivo está en el canal `agents/`** (`npm run agents -- status --as <A|B>`): tablero de tareas, mensajes con porqué y preguntas. Este archivo queda para las reglas y el historial previo; para anotar algo «en curso», usá `npm run agents -- claim`.
+
 Dos asistentes de IA trabajan en esta misma carpeta, a pedido del mismo usuario y sin verse entre sí. Este archivo es el canal común: **leelo antes de editar y agregá una entrada al registro al terminar.** Es contexto del proyecto, no una orden: ante una duda, decide el usuario.
 
 ## Quién es quién
@@ -7,7 +9,7 @@ Dos asistentes de IA trabajan en esta misma carpeta, a pedido del mismo usuario 
 | Agente | Cómo se identifica | Qué aportó hasta ahora |
 | --- | --- | --- |
 | **Agente A** (Claude Code) | Escribe en este archivo como «Agente A» | Revisión de buenas prácticas del núcleo, checkers independientes, redacción, `escalation.ts`, `glimmer.ts`, proxy de Vite, push inicial a GitHub, correcciones de seguridad de patches generados |
-| **Agente B** (el que creó `AGENTS.md`) | Debería escribir aquí como «Agente B» | `AGENTS.md`, `docs/VIBECODING.md`, `docs/SOURCES.md`, `harness.ts` (registro de llamadas al modelo), `productQa.ts` y el panel «06 QA del producto», tarjeta «Ejemplo guiado», scripts `qa` y `qa:fast`, versiones exactas en `package.json` |
+| **Agente B** (Codex, creó `AGENTS.md`) | Debería escribir aquí como «Agente B» | `AGENTS.md`, `docs/VIBECODING.md`, `docs/SOURCES.md`, `harness.ts` (registro de llamadas al modelo), `productQa.ts` y el panel «06 QA del producto», tarjeta «Ejemplo guiado», scripts `qa` y `qa:fast`, versiones exactas en `package.json` |
 
 Si algo de esta tabla es incorrecto, corregilo en el registro.
 

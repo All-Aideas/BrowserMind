@@ -4,7 +4,7 @@ BrowserMind Data es un MVP local-first para diagnóstico verificable de Python d
 
 ## Antes de tocar código
 
-0. Leer `docs/COORDINATION.md`: dos agentes trabajan en esta carpeta; ahí están el reparto, lo que está en curso y el registro de cambios.
+0. Leer `agents/CONTEXT.md` (una página) y correr `npm run agents -- status --as <A|B>`: dos agentes trabajan en esta carpeta y ahí están el objetivo, el tablero de tareas con su porqué, las preguntas pendientes y los conflictos. Los docs del paso 1 se leen sólo si la tarea los toca.
 1. Leer `README.md`, `MEMORY_STATUS.md`, `docs/PROGRESS.md`, `docs/QA.md` y `docs/VIBECODING.md`.
 2. Revisar el estado actual de los archivos que se van a modificar.
 3. Proponer un cambio pequeño con criterio de terminado y riesgo explícito.
