@@ -89,6 +89,15 @@ describe("modo replay (T7)", () => {
     await expect(pending).rejects.toThrow(/cancelado/);
   });
 
+  it("si la cancelación llegó antes del pedido, no espera la latencia grabada", async () => {
+    const records = (await record()).map((item) => ({ ...item, latencyMs: 60_000 }));
+    const fetchImpl = replayFetch(records, { simulateLatency: true });
+    const controller = new AbortController();
+    controller.abort();
+    const body = JSON.stringify(records[0].request);
+    await expect(fetchImpl("/api/meta/chat/completions", { method: "POST", body, signal: controller.signal })).rejects.toThrow(/cancelado/);
+  }, 2_000);
+
   it("rechaza archivos de replay con otro formato", () => {
     expect(() => parseReplayFile({ records: [] })).toThrow(/inválido/);
     expect(parseReplayFile({ version: 1, records: [{ key: 1 }] })).toEqual([]);

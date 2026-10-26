@@ -82,6 +82,7 @@ export function replayFetch(records: readonly ReplayRecord[], options: { simulat
     if (!record) {
       return new Response(`Replay: no hay grabación para este contexto (${key}).`, { status: 404 });
     }
+    if (init?.signal?.aborted) throw new DOMException("Replay cancelado.", "AbortError");
     if (options.simulateLatency && record.latencyMs > 0) {
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(resolve, record.latencyMs);
