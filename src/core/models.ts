@@ -9,7 +9,7 @@ import type { EscalationLevel } from "./types";
  * Arma los adaptadores de modelo para la UI en un solo lugar.
  *
  * - `live`: Muse Spark por el proxy /api/meta (nivel 3) y Glimmer (nivel 2) si está configurado.
- * - `replay`: las mismas llamadas, servidas desde /replays/muse-spark.json, sin red ni key.
+ * - `replay`: las mismas llamadas, servidas desde replays/muse-spark.json, sin red ni key.
  *
  * Sin Glimmer, Spark atiende también el nivel 2 como respaldo explícito: el nombre del
  * modelo lo dice, para que la UI y el harness no lo presenten como Glimmer.
@@ -31,7 +31,8 @@ export interface ModelSetup {
   notes: string[];
 }
 
-export const REPLAY_URL = "/replays/muse-spark.json";
+// Relativa a la base del sitio (en GitHub Pages, /BrowserMind/).
+export const REPLAY_URL = `${import.meta.env.BASE_URL}replays/muse-spark.json`;
 export const FALLBACK_SUFFIX = " · respaldo de nivel 2";
 
 /** Expone un adaptador en otro nivel sin cambiar qué modelo responde. */
