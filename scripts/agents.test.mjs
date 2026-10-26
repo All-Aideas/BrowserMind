@@ -102,4 +102,10 @@ describe("canal entre agentes", () => {
     const cloud = [{ id: "m1", ts: "2026-10-26T01:00:00Z" }, { id: "A1", ts: "2026-10-26T02:00:00Z" }];
     expect(mergeMessages(local, cloud).map((m) => m.id)).toEqual(["m1", "A1", "B1"]);
   });
+
+  it("conserva los dos mensajes si el mismo agente repitió un id en dos ramas", () => {
+    const main = [{ id: "A21", ts: "2026-10-26T21:09:59Z", text: "arreglo" }];
+    const branch = [{ id: "A21", ts: "2026-10-26T21:10:53Z", text: "entrega" }];
+    expect(mergeMessages(main, branch).map((m) => m.text)).toEqual(["arreglo", "entrega"]);
+  });
 });

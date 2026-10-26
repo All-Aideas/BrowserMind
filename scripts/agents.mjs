@@ -159,11 +159,15 @@ export function nextId(messages, from) {
   return `${from}${n}`;
 }
 
-/** Une mensajes de varias copias del canal (por ejemplo, la rama de la nube) sin duplicar. */
+/**
+ * Une mensajes de varias copias del canal (por ejemplo, la rama de la nube) sin duplicar.
+ * La clave es id + fecha: el mismo agente escribiendo en dos ramas puede repetir un id,
+ * y deduplicar sólo por id perdería uno de los dos mensajes sin aviso.
+ */
 export function mergeMessages(...sources) {
-  const byId = new Map();
-  for (const list of sources) for (const m of list) if (!byId.has(m.id)) byId.set(m.id, m);
-  return [...byId.values()].sort((a, b) => a.ts.localeCompare(b.ts));
+  const byKey = new Map();
+  for (const list of sources) for (const m of list) if (!byKey.has(`${m.id}|${m.ts}`)) byKey.set(`${m.id}|${m.ts}`, m);
+  return [...byKey.values()].sort((a, b) => a.ts.localeCompare(b.ts));
 }
 
 function remoteMessages(ref) {
