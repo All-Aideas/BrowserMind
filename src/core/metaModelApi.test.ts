@@ -86,12 +86,11 @@ describe("MetaModelApiAdapter (Muse Spark, nivel 3)", () => {
   it("envía sólo el contexto redactado, nunca el resto del script", async () => {
     const { adapter, requests } = adapterWith(JSON.stringify({ before: "", after: "", explanation: "sin cambio" }));
     const filler = Array.from({ length: 20 }, (_, i) => `secret_${i} = "C:\\\\Users\\\\ana\\\\data_${i}.csv"`).join("\n");
-    // Sin firma conocida el contexto arranca al principio del script: el relleno va después.
-    const session = runDiagnosticSession(`${SOURCE}\n${filler}`, TRACEBACK, [adapter]);
+    const session = runDiagnosticSession(`${filler}\n${SOURCE}`, TRACEBACK.replace("line 4", "line 24"), [adapter]);
     const escalated = await escalateSession(session, adapter);
 
     const sent = JSON.stringify(requests[0].body.messages);
-    expect(sent).toContain("import pandas as pd");
+    expect(sent).toContain("rolling(window=0)");
     expect(sent).not.toContain("secret_");
     expect(sent).not.toContain("C:\\\\Users");
     expect(sent).not.toContain("/home/ana");

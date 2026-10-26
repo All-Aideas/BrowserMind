@@ -83,9 +83,15 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function locateLine(lines: string[], traceback: string, rule: ClassificationRule, subject?: string): number | undefined {
+/** Línea que informa el traceback (`line N`), si existe dentro del código. */
+function reportedLine(lines: string[], traceback: string): number | undefined {
   const reported = Number(traceback.match(TRACEBACK_LINE_PATTERN)?.[1]);
-  if (reported >= 1 && reported <= lines.length) return reported;
+  return reported >= 1 && reported <= lines.length ? reported : undefined;
+}
+
+function locateLine(lines: string[], traceback: string, rule: ClassificationRule, subject?: string): number | undefined {
+  const reported = reportedLine(lines, traceback);
+  if (reported) return reported;
   if (rule.kind === "missing-column" && subject) {
     const access = new RegExp(`\\[\\s*["']${escapeRegExp(subject)}["']\\s*\\]`);
     const line = firstMatchingLine(lines, access);
@@ -111,7 +117,8 @@ export function classifyError(source: string, traceback: string, sink?: FlagTarg
         confidence: 0.2,
         repairable: false,
         nextStep: "Conservar el traceback y escalar sólo el contexto mínimo a un modelo externo.",
-        line: firstMatchingLine(lines, /raise\s+/),
+        // Sin firma conocida, la línea del traceback sigue siendo la mejor pista del contexto.
+        line: reportedLine(lines, traceback) ?? firstMatchingLine(lines, /raise\s+/),
       };
     }
 
@@ -158,7 +165,7 @@ export function selectContext(
       if (!definition || selected.has(definition.line)) continue;
       const statement = statementLines(lines, definition.line);
       if (readOnly.size + statement.length > MAX_READ_ONLY_LINES) break;
-      statement.forEach((line) => readOnly.add(line));
+      statement.filter((line) => !selected.has(line)).forEach((line) => readOnly.add(line));
     }
 
     const render = (numbers: number[]) => numbers.map((line) => `${line}: ${redactSensitive(lines[line - 1])}`).join("\n");
