@@ -25,11 +25,11 @@ BrowserMind Data: agente local-first que diagnostica y repara errores de Python 
 
 ## Mapa del código (`src/core/`)
 
-`parser` índice y sentencias · `diagnostics` clasificación, contexto y redacción · `patches` reglas locales y aplicación · `checkers` verificación independiente · `escalation` niveles 0-3 y contrato `ModelAdapter` · `glimmer` adaptador compatible con OpenAI · `engine` orquestación (`runDiagnosticSession`, `escalateSession`, `applySessionRepair`) · `harness` registro de llamadas (B) · `productQa` QA de los 5 casos (B) · `flags` trazabilidad. UI: `src/App.tsx`.
+`parser` índice y sentencias · `diagnostics` clasificación, contexto y redacción · `patches` reglas locales y aplicación · `checkers` verificación independiente · `escalation` niveles 0-3 y contrato `ModelAdapter` · `glimmer` adaptador compatible con OpenAI · `engine` orquestación (`runDiagnosticSession`, `escalateSession`, `applySessionRepair`) · `metaModelApi` adaptador de Muse Spark, nivel 3 (A) · `retry` reintento con feedback y presupuesto (A) · `replay` grabar y reproducir respuestas del modelo sin key (A) · `harness` registro de llamadas (B) · `productQa` QA de los 5 casos (B) · `flags` trazabilidad. UI: `src/App.tsx`.
 
 ## Comandos
 
-`npm run qa` (puerta obligatoria: tests + typecheck + build) · `npm run dev` · `npm run agents -- help`.
+`npm run qa` (puerta obligatoria: tests + typecheck + build; también corre en CI) · `npm run dev` · `npm run agents -- help` · `npm run replays:record` (con `MODEL_API_KEY`: llama a Spark, verifica y graba `public/replays/muse-spark.json`).
 
 ## Reglas de convivencia (resumen)
 

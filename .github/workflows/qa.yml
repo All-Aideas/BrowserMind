@@ -1,0 +1,30 @@
+name: QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Puerta oficial del repo (AGENTS.md): tests + typecheck + build.
+      - run: npm run qa
+      # El bundle no debe contener nombres de secretos del servidor.
+      - name: Sin secretos en dist
+        run: |
+          if grep -rlE "MODEL_API_KEY|GLIMMER_API_KEY" dist; then
+            echo "dist contiene nombres de variables secretas" >&2
+            exit 1
+          fi

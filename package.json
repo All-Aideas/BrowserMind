@@ -11,7 +11,8 @@
     "check": "tsc -b --noEmit",
     "qa": "npm test && npm run check && npm run build",
     "qa:fast": "npm test && npm run check",
-    "agents": "node scripts/agents.mjs"
+    "agents": "node scripts/agents.mjs",
+    "replays:record": "vitest run scripts/record-replays.test.mjs --disableConsoleIntercept"
   },
   "dependencies": {
     "react": "19.3.1",

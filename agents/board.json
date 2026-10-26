@@ -105,9 +105,9 @@
         "src/core/escalation.ts"
       ],
       "acceptance": "Máximo N reintentos dentro del presupuesto; cada uno registrado; test con fetch simulado.",
-      "status": "todo",
-      "owner": null,
-      "updated": "2026-10-26T03:10:00.000Z"
+      "status": "done",
+      "owner": "A",
+      "updated": "2026-10-26T10:33:46.272Z"
     },
     {
       "id": "T7",
@@ -121,7 +121,7 @@
       "acceptance": "URL pública + video de 2-3 min con un caso local y uno escalado a Meta.",
       "status": "todo",
       "owner": null,
-      "updated": "2026-10-26T03:10:00.000Z"
+      "updated": "2026-10-26T10:33:46.474Z"
     },
     {
       "id": "T8",
