@@ -48,6 +48,33 @@ export const SPARK_CASES = [
       "print(sales)",
     ].join("\n"),
   },
+  {
+    id: "dataframe-append",
+    traceback: "AttributeError: 'DataFrame' object has no attribute 'append'",
+    code: [
+      "import pandas as pd",
+      "rows = pd.DataFrame({\"id\": [1]}).append({\"id\": 2}, ignore_index=True)",
+      "print(rows)",
+    ].join("\n"),
+  },
+  {
+    id: "numpy-float-alias",
+    traceback: "AttributeError: module 'numpy' has no attribute 'float'",
+    code: [
+      "import numpy as np",
+      "weights = np.array([1, 2, 3], dtype=np.float)",
+      "print(weights.sum())",
+    ].join("\n"),
+  },
+  {
+    id: "sort-ascending-string",
+    traceback: "ValueError: For argument \"ascending\" expected type bool, received type str.",
+    code: [
+      "import pandas as pd",
+      "ranked = pd.DataFrame({\"score\": [3, 1, 2]}).sort_values(by=\"score\", ascending=\"False\")",
+      "print(ranked)",
+    ].join("\n"),
+  },
 ];
 
 describe.skipIf(!enabled)("grabar replays reales de Muse Spark", () => {
