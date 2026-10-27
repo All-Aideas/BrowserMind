@@ -1,0 +1,13 @@
+/* Panel de escalamiento: reutiliza .context-row, .button, .patch-button, .diff y .label-muted de styles.css. */
+.esc-panel { display: grid; gap: 8px; }
+.esc-reason, .esc-note { margin: 0; color: #8aa0b8; font: 11px 'DM Mono', monospace; }
+.esc-note { color: #f6c25b; }
+.esc-result { display: grid; gap: 10px; padding: 12px 0; }
+.esc-result strong { font: 12px 'DM Mono', monospace; }
+.esc-ok { color: #5be6d8; }
+.esc-fail { color: #f67f75; }
+.esc-result ol { display: grid; gap: 12px; margin: 0; padding-left: 18px; color: #bdcddd; font: 11px 'DM Mono', monospace; }
+.esc-result details { margin-top: 6px; }
+.esc-result summary { cursor: pointer; color: #69819d; }
+.esc-result pre { max-height: 220px; overflow: auto; margin: 6px 0 0; padding: 10px; background: #0b1424; color: #bdcddd; white-space: pre-wrap; word-break: break-word; }
+.esc-result .diff span { display: block; font: 11px 'DM Mono', monospace; }
