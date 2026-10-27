@@ -19,7 +19,8 @@ export function escalationView(session: DiagnosticSession, adapters: readonly Mo
   return {
     level,
     model: adapter?.model ?? session.escalation.model,
-    connected: adapter !== undefined,
+    // Nivel 0 son las reglas locales: no hay nada que conectar.
+    connected: level === 0 || adapter !== undefined,
     canRepair: adapter !== undefined && !session.patch && !used,
     reason,
   };
@@ -49,4 +50,9 @@ export function resultSummary(result: RetryResult): string {
   const tokens = result.attempts.reduce((sum, attempt) => sum + attempt.tokens, 0);
   const calls = result.attempts.length;
   return `${stopLabel(result)} · ${calls} ${calls === 1 ? "llamada" : "llamadas"} · ${tokens} tokens`;
+}
+
+export function metricsLabel(session: DiagnosticSession): string {
+  const { calls, generativeTokens, modelLatencyMs } = session.metrics;
+  return `${calls} llamadas · ${generativeTokens} tokens gen.${modelLatencyMs ? ` · ${modelLatencyMs}ms` : ""}`;
 }

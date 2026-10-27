@@ -40,9 +40,14 @@ describe("panel de escalamiento", () => {
     expect(html).not.toContain("Reparar con");
   });
 
-  it("no se muestra cuando las reglas locales ya resolvieron", () => {
+  it("cuando resolvieron las reglas locales muestra nivel 0 y 0 llamadas, sin botón", () => {
     const session = runDiagnosticSession(local.code, local.traceback);
-    expect(renderToStaticMarkup(createElement(EscalationPanel, { session, adapters: [], onResult: () => {} }))).toBe("");
+    const html = renderToStaticMarkup(createElement(EscalationPanel, { session, adapters: [], onResult: () => {} }));
+    expect(html).toContain("ESCALAMIENTO · NIVEL 0");
+    expect(html).toContain("Reglas locales");
+    expect(html).toContain("0 llamadas · 0 tokens gen.");
+    expect(html).not.toContain("no conectado");
+    expect(html).not.toContain("Reparar con");
   });
 
   it("resume el reintento: rechazo por checker, verificación y tokens", async () => {

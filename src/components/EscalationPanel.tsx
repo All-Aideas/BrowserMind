@@ -3,7 +3,7 @@ import type { ModelAdapter } from "../core/escalation";
 import { adapterForLevel } from "../core/models";
 import { repairWithRetry, type RetryResult } from "../core/repairLoop";
 import type { DiagnosticSession } from "../core/types";
-import { attemptLabel, escalationView, resultSummary } from "./escalationView";
+import { attemptLabel, escalationView, metricsLabel, resultSummary } from "./escalationView";
 import "./escalationPanel.css";
 
 export interface EscalationPanelProps {
@@ -57,8 +57,6 @@ export function EscalationPanel(props: EscalationPanelProps) {
     }
   }
 
-  if (view.level === 0) return null;
-
   return (
     <section className="esc-panel" aria-label="Escalamiento a modelo">
       <div className="context-row">
@@ -66,14 +64,14 @@ export function EscalationPanel(props: EscalationPanelProps) {
           <span className="label-muted">ESCALAMIENTO · NIVEL {view.level}</span>
           <strong>{view.model}{view.connected ? "" : " · no conectado"}</strong>
         </div>
-        {view.canRepair && !result && (
-          running
+        {view.canRepair && !result
+          ? running
             ? <button type="button" className="button patch-button" onClick={() => controller.current?.abort()}>Cancelar<span>×</span></button>
             : <button type="button" className="button patch-button" onClick={repair}>Reparar con {view.model}<span>↗</span></button>
-        )}
+          : <code title={view.reason}>{metricsLabel(session)}</code>}
       </div>
       <p className="esc-reason">{view.reason}</p>
-      {notes.map((note) => <p key={note} className="esc-note">{note}</p>)}
+      {view.level > 0 && notes.map((note) => <p key={note} className="esc-note">{note}</p>)}
       {running && <p className="esc-note" role="status">Consultando el modelo y verificando el patch…</p>}
       {result && (
         <div className="esc-result">

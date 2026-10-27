@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { applySessionRepair, codeAfterRepair, escalateSession, runDiagnosticSession } from "./core/engine";
-import { GLIMMER_PROXY_ENDPOINT, GlimmerAdapter } from "./core/glimmer";
+import { applySessionRepair, codeAfterRepair, runDiagnosticSession } from "./core/engine";
+import { adapterForLevel } from "./core/models";
 import { runProductBenchmark, type BenchmarkReport } from "./core/benchmark";
 import { runProductQa, type ProductQaReport } from "./core/productQa";
 import { createBrowserPythonRuntime, type PythonExecutionResult, type PythonRuntime } from "./core/pythonRuntime";
@@ -9,6 +9,8 @@ import { SAMPLE_CASES, type SampleCase } from "./core/samples";
 import { loadSourceFile } from "./core/sourceLoader";
 import { createBrowserMindMemory } from "./core/memory";
 import type { DiagnosticSession, FunctionFlag } from "./core/types";
+import { EscalationPanel } from "./components/EscalationPanel";
+import { useModelSetup } from "./components/useModelSetup";
 
 function statusLabel(session: DiagnosticSession | undefined): string {
   if (!session) return "Esperando código";
@@ -39,12 +41,6 @@ function memoryStatusLabel(status: MemoryStatus): string {
   return "VACÍA";
 }
 
-// El endpoint es el proxy local de Vite: la API key queda del lado del servidor.
-const glimmer = new GlimmerAdapter({
-  endpoint: GLIMMER_PROXY_ENDPOINT,
-  model: import.meta.env.VITE_GLIMMER_MODEL || "muse-glimmer",
-});
-
 export function App() {
   const [selectedSample, setSelectedSample] = useState<SampleCase>(SAMPLE_CASES[0]);
   const [code, setCode] = useState(SAMPLE_CASES[0].code);
@@ -52,7 +48,6 @@ export function App() {
   const [session, setSession] = useState<DiagnosticSession>();
   const [toast, setToast] = useState<string>();
   const [benchmarkMode, setBenchmarkMode] = useState(false);
-  const [escalating, setEscalating] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [productQa, setProductQa] = useState<ProductQaReport>();
   const [benchmark, setBenchmark] = useState<BenchmarkReport>();
@@ -61,7 +56,10 @@ export function App() {
   const [executing, setExecuting] = useState(false);
   const [memoryReady, setMemoryReady] = useState(false);
   const [memoryStatus, setMemoryStatus] = useState<MemoryStatus>("loading");
-  const escalation = useRef<AbortController | undefined>(undefined);
+  // Modelos de Meta por proxy (la key queda en el servidor) o, con ?replay, desde grabaciones.
+  const models = useModelSetup();
+  // En replay nada sale a la red, así que no hace falta el modo benchmark para escalar.
+  const modelAdapters = benchmarkMode || models.mode === "replay" ? models.adapters : [];
   const pythonRuntime = useRef<PythonRuntime | undefined>(undefined);
   const memory = useRef(createBrowserMindMemory());
   const fileInput = useRef<HTMLInputElement>(null);
@@ -131,7 +129,6 @@ export function App() {
   }
 
   function resetSession(): void {
-    escalation.current?.abort();
     setSession(undefined);
   }
 
@@ -219,7 +216,7 @@ export function App() {
 
   function analyzeTraceback(nextTraceback: string): void {
     try {
-      const nextSession = runDiagnosticSession(code, nextTraceback, benchmarkMode ? [glimmer] : []);
+      const nextSession = runDiagnosticSession(code, nextTraceback, modelAdapters);
       setSession(nextSession);
       setToast(nextSession.patch
         ? "Diagnóstico listo: hay una reparación verificable."
@@ -239,29 +236,20 @@ export function App() {
     analyzeTraceback(execution.traceback);
   }
 
-  async function escalate(): Promise<void> {
-    if (!session) return;
-    const controller = new AbortController();
-    escalation.current = controller;
-    setEscalating(true);
-    try {
-      const next = await escalateSession(session, glimmer, controller.signal);
-      if (controller.signal.aborted) return;
-      setSession(next);
-      setToast(next.patch ? "Glimmer propuso un patch: revisalo y verificalo." : `Glimmer no propuso un cambio: ${next.modelNote}`);
-    } catch (error) {
-      if (!controller.signal.aborted) setToast(error instanceof Error ? error.message : "Falló el escalamiento.");
-    } finally {
-      if (escalation.current === controller) escalation.current = undefined;
-      setEscalating(false);
-    }
+  // Verifica el patch ejecutándolo con Pyodide, sólo si el usuario ya ejecutó Python en esta sesión.
+  async function runPatched(patchedCode: string): Promise<string | undefined> {
+    if (!execution || !pythonRuntime.current) return undefined;
+    const result = await pythonRuntime.current.run({ code: patchedCode, timeoutMs: 30_000 });
+    return result.status === "error" ? result.traceback ?? result.error ?? "Error al ejecutar el patch." : undefined;
   }
 
   async function retryRepair(): Promise<void> {
     if (!session?.patch || session.patch.origin !== "model") return;
+    const adapter = adapterForLevel(models.adapters, session.escalation.level);
+    if (!adapter) return;
     setRetrying(true);
     try {
-      const result = await retrySessionRepair(session, glimmer, { maxAttempts: 2, maxAdditionalTokens: 1_024 });
+      const result = await retrySessionRepair(session, adapter, { maxAttempts: 2, maxAdditionalTokens: 1_024 });
       setSession(result.session);
       if (result.session.status === "verified") {
         setCode(codeAfterRepair(result.session, code));
@@ -337,12 +325,12 @@ export function App() {
           <div className="sample-note"><span className="mini-icon">↳</span><span>{selectedSample.kind}</span></div>
           <div className="metric-stack">
             <div><span>Reglas locales</span><strong>ACTIVAS</strong></div>
-            <div><span>Modelo externo</span><strong>{session?.metrics.calls ? `GLIMMER · ${session.metrics.calls}` : benchmarkMode ? "HABILITADO" : "NO USADO"}</strong></div>
+            <div><span>Modelo externo</span><strong>{session?.metrics.calls ? `META · ${session.metrics.calls}` : models.mode === "replay" ? "REPLAY" : benchmarkMode ? "HABILITADO" : "NO USADO"}</strong></div>
             <div><span>Datos enviados</span><strong>0 filas</strong></div>
           </div>
           <label className="benchmark-toggle">
             <input type="checkbox" checked={benchmarkMode} onChange={(event) => toggleBenchmarkMode(event.target.checked)} />
-            <span><strong>Modo benchmark Meta</strong>Permite enviar el contexto redactado a Muse Glimmer. Usalo sólo con datos sintéticos o públicos: con un endpoint remoto no hay privacidad total.</span>
+            <span><strong>Modo benchmark Meta</strong>Permite enviar el contexto redactado a modelos de Meta (Muse Spark, o Glimmer si está configurado). Usalo sólo con datos sintéticos o públicos: con un endpoint remoto no hay privacidad total.</span>
           </label>
           <div className="scope-note"><span>i</span><p>{benchmarkMode ? "Sólo viaja lo que ves en «Contexto que viajaría», y únicamente cuando presionás «Escalar»." : "El contenido queda en esta sesión. Nada se envía a un modelo externo."}</p></div>
           <div className="scope-note memory-note"><span>⌁</span><div><p><strong>Memoria local · {memoryStatusLabel(memoryStatus)}</strong><br />Fuente, sesión y benchmark se guardan sólo en este navegador.</p><button type="button" className="button secondary memory-button" onClick={clearMemory}>Borrar memoria</button></div></div>
@@ -395,8 +383,19 @@ export function App() {
               <div className="context-row"><div><span className="label-muted">CONTEXTO SELECCIONADO</span><strong>{session.metrics.selectedLines} líneas · {session.context.symbols.length} símbolos</strong></div><code>{session.metrics.estimatedTokens} tokens estimados</code></div>
               {session.patch ? (
                 <div className="patch-card"><div className="patch-heading"><span className="check-badge">✓</span><div><span className="label-muted">{session.patch.origin === "model" ? "PATCH GENERADO · VERIFICAR" : "PATCH DETERMINISTA"}</span><strong>{session.patch.title}</strong></div></div><p>{session.patch.explanation}</p><div className="diff"><span className="removed">− {session.patch.before}</span><span className="added">+ {session.patch.after}</span></div><button type="button" className="button patch-button" onClick={applyRepair} disabled={session.status !== "analyzed"}>{session.status === "verified" ? "Patch aplicado" : "Aplicar y verificar"}<span>↗</span></button>{session.status === "failed" && session.patch.origin === "model" && <button type="button" className="button retry-button" onClick={retryRepair} disabled={retrying}>{retrying ? "Reintentando…" : "Reintentar con feedback"}<span>↻</span></button>}</div>
-              ) : <div className="manual-card"><span>!</span><div><strong>Revisión manual requerida</strong><p>{session.modelNote ?? session.diagnostic.nextStep}</p>{session.escalation.level === glimmer.level && session.escalation.available && !session.escalation.used && <button type="button" className="button patch-button" onClick={escalate} disabled={escalating}>{escalating ? "Consultando Glimmer…" : "Escalar a Muse Glimmer"}<span>↗</span></button>}</div></div>}
-              <div className="context-row"><div><span className="label-muted">ESCALAMIENTO · NIVEL {session.escalation.level}</span><strong>{session.escalation.model}{session.escalation.available ? "" : " · no conectado"}</strong></div><code title={session.escalation.reason}>{session.metrics.calls} llamadas · {session.metrics.generativeTokens} tokens gen.{session.metrics.modelLatencyMs ? ` · ${session.metrics.modelLatencyMs}ms` : ""}</code></div>
+              ) : <div className="manual-card"><span>!</span><div><strong>Revisión manual requerida</strong><p>{session.modelNote ?? session.diagnostic.nextStep}</p></div></div>}
+              <EscalationPanel
+                session={session}
+                adapters={modelAdapters}
+                notes={models.notes}
+                runPatched={runPatched}
+                onResult={(result) => {
+                  setSession(result.session);
+                  setCode(codeAfterRepair(result.session, code));
+                  setToast(result.session.status === "verified" ? "Patch del modelo aprobado por los checkers." : "El modelo no logró un patch verificado: tu código quedó como estaba.");
+                }}
+                onError={setToast}
+              />
               <div className="checker-list"><div className="subheading"><span>CHECKERS</span><strong>{passedChecks}/{session.checkers.length} aprobados</strong></div>{session.checkers.map((checker) => <div className="checker-row" key={checker.id}><span className={checker.passed ? "checker-ok" : "checker-fail"}>{checker.passed ? "✓" : "×"}</span><span>{checker.name}</span><small>{checker.message}</small></div>)}</div>
             </>
           )}
