@@ -1,4 +1,5 @@
 import { traced, type FlagTarget } from "./flags";
+import type { ModelHarness } from "./harness";
 import type { Diagnostic, EscalationLevel, EscalationPlan, RepairPatch, SelectedContext } from "./types";
 
 export interface ModelUsage {
@@ -21,6 +22,8 @@ export interface ModelProposal {
 export interface ModelAdapter {
   readonly level: Exclude<EscalationLevel, 0>;
   readonly model: string;
+  /** Harness compartido para cerrar la llamada después de los checkers. */
+  readonly harness?: ModelHarness;
   proposePatch(context: SelectedContext, diagnostic: Diagnostic, signal?: AbortSignal): Promise<ModelProposal>;
 }
 

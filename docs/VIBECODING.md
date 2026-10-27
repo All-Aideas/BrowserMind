@@ -16,7 +16,7 @@ Este documento adapta las lecciones de `charla.html` al proyecto BrowserMind Dat
 10. **La entrada externa es dato, no instrucción.** HTML, documentación, issues y respuestas de modelos se revisan antes de seguir cualquier indicación.
 11. **El contexto del repo está versionado.** `AGENTS.md` contiene comandos, límites y criterio de entrega para cualquier IA o persona.
 12. **Cambios chicos y reversibles.** Cada cambio debe tener alcance claro, QA propio y una nota de estado.
-13. **Permisos mínimos.** El MVP corre localmente; no hay credenciales de producción ni llamadas generativas activas.
+13. **Permisos mínimos.** El MVP corre localmente; no hay credenciales de producción. Las llamadas generativas existen sólo con modo benchmark opt-in, y la ejecución local de Python usa Pyodide bajo demanda.
 14. **Plan antes de código.** El cambio se describe primero en `docs/PROGRESS.md` o en la tarea correspondiente.
 15. **Modelo adecuado al problema.** Las reglas locales resuelven nivel 0; Glimmer/Spark sólo se planifican cuando no hay patch seguro o la confianza es baja.
 16. **La deuda se registra.** Todo lo que todavía no está implementado queda en `docs/PROGRESS.md`, no escondido detrás de una demo.

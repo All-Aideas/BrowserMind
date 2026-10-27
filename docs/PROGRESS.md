@@ -16,15 +16,19 @@ Fecha de arranque: 25 de octubre de 2026.
 - Prácticas de vibecoding incorporadas: `npm run qa`, `AGENTS.md`, registro de fuentes, checklist de diff y `ModelHarness` para tokens, latencia y validación estructural de respuestas de modelos.
 - QA de producto visible y ejecutable: cinco contratos semilla con verificación de diagnóstico, patch/checkers, revisión manual y regresión sin API.
 - Correcciones de seguridad de patches generados (25 oct): fragmento único y un solo reemplazo; definiciones lejanas enviadas como sólo lectura; el editor conserva el código si un checker rechaza el patch.
+- Ejecución local (26 oct): lector de `.py`/`.ipynb`, `PythonRuntime` testeable, Web Worker con Pyodide 0.26.4 bajo demanda y panel de stdout/stderr/traceback/timeout. La primera carga depende del CDN; no se fingió una prueba de proveedor remoto.
+- Harness integrado (26 oct): `ModelHarness` se conecta al ciclo de Glimmer; cada propuesta queda `received` sólo hasta la validación final y luego registra `accepted`/`rejected` con porcentaje de checkers, sin dejar ambiguos ni cambios fuera de contexto como pendientes.
+- Benchmark reproducible (26 oct): panel A–D con 20 tareas sobre cinco casos; reporta resolución, revisión manual, tokens de contexto y configuraciones de Glimmer/Spark no conectadas sin maquillarlas como éxito.
+- Reintento controlado (26 oct): `retrySessionRepair` reenvía diff y checkers rojos, limita intentos/tokens y sólo actualiza el editor cuando el segundo patch pasa todos los checkers.
+- Memoria local (26 oct): IndexedDB versionado para fuente, sesión y benchmark, con límite de tamaño, restauración al abrir y borrado explícito; el fallback en memoria permite probar el contrato sin navegador.
+- Diagnóstico robusto (26 oct): errores desconocidos usan la línea del traceback y el contexto elimina solapamientos entre líneas editables y definiciones de sólo lectura.
 
 ## Próximo orden
 
-1. Ejecutar código real con Pyodide en Web Worker y capturar traceback real.
-2. Agregar lector de `.py` y `.ipynb` con memoria de sesión IndexedDB.
-3. Agregar selector progresivo de contexto y presupuesto de tokens más fino.
-4. Reintentos con diff y traceback cuando un checker rechaza el patch generado; Spark (nivel 3) opcional.
-5. Ejecutar contra un proveedor real de Glimmer y comparar tokens/latencia/calidad.
-6. Benchmark de 15-30 tareas y modo replay.
+1. Agregar selector progresivo de contexto y presupuesto de tokens más fino.
+2. Ejecutar contra un proveedor real de Glimmer y comparar tokens/latencia/calidad.
+3. Integrar Spark (nivel 3) cuando esté disponible la API key.
+4. Modo replay y demo pública para el jurado.
 
 ## Decisión de diseño
 

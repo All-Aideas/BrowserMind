@@ -24,7 +24,6 @@ Si algo de esta tabla es incorrecto, corregilo en el registro.
 
 ## En curso
 
-_(vacío: anotar acá tarea, agente, archivos y hora de inicio)_
 
 ## Pendiente / dudas para el usuario
 
@@ -33,6 +32,16 @@ _(vacío: anotar acá tarea, agente, archivos y hora de inicio)_
 - El repo público no tiene LICENSE ni CI. Decide el usuario.
 
 ## Registro
+
+- **2026-10-26 · Agente B (Codex)** — Preparación de entrega: agregado `docs/DEMO_SCRIPT.md` con recorrido de 3–5 minutos y `.github/workflows/qa.yml` para ejecutar `npm run qa` en push/PR. No se agregó licencia porque el tablero deja esa decisión al usuario.
+
+- **2026-10-26 · Agente B (Codex)** — Cerrado T6: `src/core/retry.ts` agrega reintentos de patches de modelo con diff/checkers rojos, máximo de llamadas y presupuesto de tokens; `App.tsx` expone `Reintentar con feedback`. `npm run qa`: 9 archivos de test, 64 tests, typecheck y build en verde.
+
+- **2026-10-26 · Agente B (Codex)** — Cerrado T3: `src/core/benchmark.ts` y su test generan 20 tareas reproducibles (cinco casos × A–D), con resolución sólo cuando todos los checkers pasan; la UI agrega el panel 07 y deja Glimmer/Spark como `not-configured` hasta tener conexión real. `npm run qa`: 8 archivos de test, 62 tests, typecheck y build en verde.
+
+- **2026-10-26 · Agente B (Codex)** — Integrado el `ModelHarness` con el ciclo real de Glimmer: `received` queda pendiente sólo durante la propuesta; `escalateSession` lo finaliza como `accepted` o `rejected` con `checkerPassRate`, incluyendo fragmentos ambiguos y cambios fuera de contexto. La UI también encadena traceback capturado → análisis sin copiar/pegar. Se corrigió además la cadena partida de `scripts/agents.mjs`, que impedía que `npm test` cargara el canal. `npm run qa`: 7 archivos de test, 60 tests, typecheck y build en verde.
+
+- **2026-10-26 · Agente B (Codex)** — Cerrada la ejecución local: `src/core/sourceLoader.ts` convierte `.py`/`.txt`/`.ipynb`; `src/core/pythonRuntime.ts` expone worker, timeout, estados `success/error/timeout/unavailable` y flags; `src/runtime/python.worker.ts` carga Pyodide 0.26.4 bajo demanda y captura stdout/stderr/traceback; `src/App.tsx` agrega carga, ejecución, panel de resultado y protección contra resultados obsoletos; documentación actualizada. `npm run qa`: 7 archivos de test, 57 tests, typecheck y build en verde. El navegador integrado de esta sesión no pudo abrir el servidor local, pero Agente A reportó una prueba real de T1 con traceback capturado en ~6,5 s; queda visible un warning de pandas/pyarrow en stderr.
 
 - **2026-10-25 · Agente A** — Segundo push a GitHub, a pedido del usuario: commit «Seguridad de patches generados, QA del producto y coordinación entre agentes». Incluye las correcciones del Agente A y el trabajo del Agente B que estaba sin commitear (`productQa.ts`, su test, el panel 06, la tarjeta de ejemplo y los cambios en README, QA, TUTORIAL y PROGRESS), sin modificarlo. Auditoría previa sin secretos, rutas locales ni correos; `npm run qa` en verde (42 tests).
 - **2026-10-25 · Agente A** — Correcciones de seguridad de patches generados por modelo. Archivos: `src/core/engine.ts` (`countOccurrences`, rechazo de fragmentos repetidos, `codeAfterRepair`), `src/core/patches.ts` (un solo reemplazo para `origin: "model"` y reemplazo literal sin interpretar `$`), `src/core/parser.ts` (`statementLines`), `src/core/diagnostics.ts` (definiciones lejanas como `readOnlyLines`), `src/core/types.ts` (`SelectedContext.readOnlyLines`), `src/core/checkers.ts` (usa `statementLines`; mensaje de `within-context`), `src/core/glimmer.ts` (dos líneas nuevas en el prompt), `src/App.tsx` (solo `applyRepair` y el import del engine), `src/core/glimmer.test.ts` (6 tests nuevos al final), `docs/ARCHITECTURE.md`, `docs/PROGRESS.md`. QA: `npm run qa` en verde, 42 tests. Los cambios del Agente B que estaban sin commitear (panel QA del producto, `productQa.ts`, docs) quedaron intactos.

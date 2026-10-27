@@ -31,6 +31,8 @@ export interface HarnessTotals {
 export interface ProposalValidation {
   accepted: boolean;
   reason: string;
+  /** Identifica el registro pendiente de pasar por checkers. */
+  recordId?: string;
 }
 
 function proposalPatchIsStructurallyApplicable(source: string, patch: RepairPatch): ProposalValidation {
@@ -80,16 +82,31 @@ export class ModelHarness {
     proposal: ModelProposal,
   ): ProposalValidation {
     const validation = validateModelProposal(source, proposal);
-    this.record({
+    const record = this.record({
       model,
       level,
       promptTokens: proposal.usage.promptTokens,
       completionTokens: proposal.usage.completionTokens,
       latencyMs: proposal.usage.latencyMs,
-      status: proposal.patch ? (validation.accepted ? "accepted" : "rejected") : "empty",
+      status: proposal.patch ? (validation.accepted ? "received" : "rejected") : "empty",
       rationale: proposal.rationale,
     });
-    return validation;
+    return { ...validation, recordId: record.id };
+  }
+
+  finalizeProposal(recordId: string, accepted: boolean, checkerPassRate: number, rationale?: string): HarnessCallRecord {
+    const index = this.records.findIndex((record) => record.id === recordId);
+    if (index === -1) throw new Error(`No existe la llamada de modelo ${recordId}.`);
+    const current = this.records[index];
+    if (!current) throw new Error(`No existe la llamada de modelo ${recordId}.`);
+    const finalized: HarnessCallRecord = {
+      ...current,
+      status: accepted ? "accepted" : "rejected",
+      checkerPassRate,
+      rationale: rationale ?? current.rationale,
+    };
+    this.records[index] = finalized;
+    return finalized;
   }
 
   recordFailure(

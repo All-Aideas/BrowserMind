@@ -18,6 +18,7 @@ La proveniencia evita mezclar datos reales, decisiones del equipo y sugerencias 
 | Cinco casos de `src/core/samples.ts` | Ilustrativo | Benchmark sintético reproducible |
 | Reglas locales y checkers | Propio | Código implementado y testeado en este repo |
 | `ModelAdapter` / `GlimmerAdapter` | Sugerido por IA + propio | Adaptador implementado y probado con un endpoint simulado; todavía no reproducido contra un Glimmer real |
+| Documentación oficial de [Pyodide Web Worker](https://pyodide.org/en/stable/usage/webworker.html) | Fuente técnica externa | Patrón de worker modular usado para la ejecución local; la descarga se fija a Pyodide 0.26.4 en el código |
 | Resultados de `npm test`, `npm run check`, `npm run build` | Propio | Mediciones del estado local, fechadas por la corrida |
 
 ## Regla

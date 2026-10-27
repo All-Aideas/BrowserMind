@@ -42,7 +42,10 @@ describe("harness de modelos", () => {
 
   it("concilia tokens, llamadas y estados", () => {
     const harness = new ModelHarness();
-    harness.recordProposal("x = 1", "Muse Glimmer", 2, proposal(modelPatch));
+    const pending = harness.recordProposal("x = 1", "Muse Glimmer", 2, proposal(modelPatch));
+    expect(pending.recordId).toBeDefined();
+    expect(harness.all()[0]?.status).toBe("received");
+    harness.finalizeProposal(pending.recordId!, true, 1);
     harness.recordFailure("Muse Glimmer", 2, { promptTokens: 8, completionTokens: 0, latencyMs: 12 }, "timeout");
     expect(harness.totals()).toMatchObject({
       calls: 2,
@@ -52,5 +55,13 @@ describe("harness de modelos", () => {
       failedCalls: 1,
       acceptedCalls: 1,
     });
+  });
+
+  it("marca como rechazado un patch estructuralmente válido que falla los checkers", () => {
+    const harness = new ModelHarness();
+    const pending = harness.recordProposal("x = 1", "Muse Glimmer", 2, proposal(modelPatch));
+    harness.finalizeProposal(pending.recordId!, false, 0.5, "checker rojo");
+    expect(harness.totals()).toMatchObject({ acceptedCalls: 0, rejectedCalls: 1 });
+    expect(harness.all()[0]).toMatchObject({ status: "rejected", checkerPassRate: 0.5, rationale: "checker rojo" });
   });
 });
